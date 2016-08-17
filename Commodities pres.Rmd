@@ -1,0 +1,36 @@
+---
+title: "The South African Art Market"
+subtitle: "Explosive Behaviour"
+author: Laurie Binge
+date: "15 February 2016"
+output:
+  beamer_presentation:
+    includes:
+      in_header: mystyle.tex
+    theme: "CambridgeUS"
+    colortheme: "dolphin"
+    fonttheme: "structurebold" 
+    toc: true
+    slide_level: 2
+---
+
+
+#Introduction
+
+## The South African Art Market
+
+Surge in popularity of Modern and Contemporary South African art 
+
+Huge increase in prices in run-up to Great Recession   
+
+Record prices at international and local auctions   
+
+- Irma Stern's *"Arab Priest"* sold for £2.7m in 2011 Bonhams in London 
+- Irma Stern's *"Two Arabs"* sold for R19m by Strauss & Co
+
+Prompted many claims of a "bubble"" in the art market   
+  
+Objectives:  
+
+1) Construct indicators of art market prices over time
+2) Test for a "bubble" in the SA art market
