@@ -22,14 +22,16 @@ library(urca)
 library(lmtest)
 library(grid)
 
-#setwd("C:/Users/Laurie/OneDrive/Documents/BING/Commodity Cycles/R Commodities")
 setwd("C:\\Users\\Laurie\\OneDrive\\Documents\\BING\\Commodity Cycles\\R Commodities")
+
 comdata <- read.csv("Commodities.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 
 #comdata$date <- as.Date(comdata$date, "%Y/%m/%d")
 comdata$datum <- paste(comdata$datum, comdata$Year)
 comdata$date <- as.Date(as.yearmon(as.character(comdata$datum),"%B %Y"))
 comdata$datum <- factor(as.yearmon(as.character(comdata$datum),"%B %Y"))
+
+
 
 coms <- aggregate(comdata$wheat, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
 for(i in colnames(comdata)[7:29]) {
@@ -74,6 +76,8 @@ com.plot("wheat")
 com.plot("mealies")
 com.plot("eggs")
 com.plot("s.horses")
+
+
 #"wheat","wheat.flour","boer.meal","mealies","mealie.meal","barley","oats","oathay",
 #"lucerne.hay","potatoes","tobacco","beef","mutton","butter","eggs","cattle","sheep",
 #"pigs","bread","oranges","s.horses","tr.oxen","m.cows","w.sheep"
@@ -133,10 +137,51 @@ toets1 <- toets[21:33,wc.towns]
 #g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 #g
 
+#---------------------------------------------------
+#REPEAT SALES TOW EXAMPLE
+toy <- dcast(comdata, time_id + datum ~ town, mean, value.var="wheat")
+toy <- toy[21:30,c("time_id","datum","Beaufort West","Cape Town","Worcester")]
+toy$t <- 1:nrow(toy)
+#toy1$lnvalue <- log(toy1$value) 
+
+maak <- function(naam) {
+    toy2 <- toy
+    toy2 <- toy2[!is.na(toy[,naam]),c(naam,"t")]
+    for(i in 1:(nrow(toy2)-1)) {
+        toy2$P[1] <- 0
+        toy2$P[i+1] <- log(toy2[i+1,naam]/toy2[i,naam])
+    }
+    xmat <- array(0, dim = c(nrow(toy2)-1, nrow(toy))) 
+    for(i in 1:(nrow(toy2)-1)) {
+        xmat[i,toy2$t[i]] <- -1
+        xmat[i,toy2$t[i+1]] <- 1
+    }
+    einde <- cbind(toy2$P[-1],xmat)  
+    return(einde)
+}
+
+einde <- as.data.frame(rbind(maak("Beaufort West"),maak("Cape Town"),maak("Worcester")))
+dy <- einde$V1
+xmat <- as.matrix(einde[,2:ncol(einde)])
+
+rsales <- lm(dy ~ xmat + 0)
+rs_index <- as.data.frame(exp(rsales$coefficients))
+n <- rs_index[1,1]
+rs_index <- rs_index/n*100
+rs_index <- na.locf(rs_index)
+#rs_index2 <- exp(as.data.frame(ps.RS$coefficients))*100
+
+toy <- cbind(toy,rs_index)
+toy <- toy[,c(2,3,4,5,7)]
+colnames(toy)[c(1,5)] <- c("Date","Index")
+
+
 
 ##====================##
 ## REPEAT SALES INDEX ##
 ##====================##
+
+
 rscomdata <- comdata[,c("time_id","date","town","wheat")]
 rscomdata$commodity <- "wheat"
 colnames(rscomdata) <- c("counter","date","town","price","commodity")
@@ -159,17 +204,17 @@ ec.towns <- c("Aliwal North","Burghersdorp","Cradock","Dordrecht","East London",
 
 kzn.towns <- c("Pietermaritzburg, Natal","Durban, Natal")
 
-in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Kimberley","Pretoria","Salisbury","Vryburg")
-#in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Johannesburg","Kimberley","Pretoria","Salisbury","Vryburg")
+#in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Kimberley","Pretoria","Salisbury","Vryburg")
+in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Johannesburg","Kimberley","Pretoria","Salisbury","Vryburg")
 
 cape <- c(wc.towns,ec.towns)
 col.towns <- c(cape,kzn.towns)
 all.towns <- c(wc.towns,ec.towns,kzn.towns,in.towns)
 
 #-------------------------------------------------------------------
-rscomdata1 <- rscomdata[rscomdata$commodity=="mealies",]
+rscomdata1 <- rscomdata[rscomdata$commodity=="wheat",]
 #"wheat","mealies","eggs","tobacco","butter","beef"
-rscomdata1 <- rscomdata1[rscomdata1$town %in% col.towns,]
+rscomdata1 <- rscomdata1[rscomdata1$town %in% cape,]
 
 rscomdata1$price.int <- na.approx(rscomdata1$price,rule=2)
 
@@ -266,6 +311,69 @@ g <- g + xlab("")
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+
+
+##=================##
+## BLUE BOOKS DATA ##
+##=================##
+
+blue <- read.csv("Blue_Books.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
+
+coms <- aggregate(blue$oatmeal, by=list(blue$date), FUN = function(x) sum(!is.na(x)))
+for(i in colnames(blue)[4:62]) {
+    coms1 <- aggregate(blue[,i], by=list(blue$date), FUN = function(x) sum(!is.na(x)))
+    coms <- merge(coms, coms1, by="Group.1",all.x=TRUE)
+}
+colnames(coms) <- c("Date",colnames(blue)[4:62])
+
+complot <- melt(coms, id="Date") 
+g <- ggplot(complot, aes(x=Date,value,colour=variable,fill=variable))
+g <- g + geom_bar(stat="identity")
+g <- g + theme(legend.title=element_blank())
+g <- g + ylab("Total obs")
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g
+
+
+rsblue <- blue[,c("date","town","oatmeal")]
+rsblue$commodity <- "oatmeal"
+colnames(rsblue) <- c("date","town","price","commodity")
+for(i in colnames(blue)[4:62]) {
+    rsblue1 <- blue[,c("date","town",i)]
+    rsblue1$commodity <- i
+    colnames(rsblue1) <- c("date","town","price","commodity")
+    rsblue <- rbind(rsblue, rsblue1)
+}
+rsblue$lnprice <- log(rsblue$price)
+rsblue <- transform(rsblue, id = as.numeric(interaction(factor(town),factor(commodity),drop=TRUE)))
+
+rsblue1 <- rsblue[rsblue$commodity=="wheat",]
+#"wheat","mealies","eggs","tobacco","butter","beef"
+#rsblue1 <- rsblue1[rsblue1$town %in% cape,]
+
+rsblue1$price.int <- na.approx(rsblue1$price,rule=2)
+
+g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
+g <- g + geom_point(size = 2) 
+g <- g + geom_line()
+g <- g + ylab("Wheat prices")
+g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank())
+g
+
+g <- ggplot(data=rsblue1,aes(x=date, y=price.int, colour=town)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Wheat prices")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank())
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
 g
 
 
@@ -543,6 +651,8 @@ td(formula, conversion = "sum", to = "quarterly", method = "chow-lin-maxlog",
 m1 <- td(y.a ~ 1, conversion="average",to="monthly",method = "denton-cholette")
 m1 <- td(y.a ~ x1.q + x2.q, conversion="average",to="monthly",method = "litterman-minrss")
 y.q <- predict(m1)
+
+
 
 
 
