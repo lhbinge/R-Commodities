@@ -21,6 +21,7 @@ library(tseries)
 library(urca)
 library(lmtest)
 library(grid)
+library(tempdisagg)
 
 setwd("C:\\Users\\Laurie\\OneDrive\\Documents\\BING\\Commodity Cycles\\R Commodities")
 
@@ -138,7 +139,7 @@ toets1 <- toets[21:33,wc.towns]
 #g
 
 #---------------------------------------------------
-#REPEAT SALES TOW EXAMPLE
+#REPEAT SALES TOWN EXAMPLE
 toy <- dcast(comdata, time_id + datum ~ town, mean, value.var="wheat")
 toy <- toy[21:30,c("time_id","datum","Beaufort West","Cape Town","Worcester")]
 toy$t <- 1:nrow(toy)
@@ -194,6 +195,7 @@ for(i in colnames(comdata)[7:29]) {
 rscomdata$lnprice <- log(rscomdata$price)
 rscomdata <- transform(rscomdata, id = as.numeric(interaction(factor(town),factor(commodity),drop=TRUE)))
 
+
 #==================================================================
 #REPEAT SALES by Commodity (e.g. Group by Wheat)
 #==================================================================
@@ -211,15 +213,19 @@ cape <- c(wc.towns,ec.towns)
 col.towns <- c(cape,kzn.towns)
 all.towns <- c(wc.towns,ec.towns,kzn.towns,in.towns)
 
+#wtest <- c("Beaufort West","Cape Town","Worcester")
+
+rscomdata <- rscomdata[rscomdata$town %in% cape,]
 #-------------------------------------------------------------------
+
 rscomdata1 <- rscomdata[rscomdata$commodity=="wheat",]
 #"wheat","mealies","eggs","tobacco","butter","beef"
-rscomdata1 <- rscomdata1[rscomdata1$town %in% cape,]
-
-rscomdata1$price.int <- na.approx(rscomdata1$price,rule=2)
+#rscomdata1 <- rscomdata1[rscomdata1$counter >20 & rscomdata1$counter <31 ,]
+#rscomdata1$price.int <- na.approx(rscomdata1$price,rule=2)
+#unique(rscomdata1$town)
 
 g <- ggplot(data=rscomdata1,aes(x=date, y=price, colour=town)) 
-g <- g + geom_point(size = 2) 
+g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
 g <- g + ylab("Wheat prices")
 g <- g + xlab("")
@@ -229,17 +235,8 @@ g <- g + theme(legend.title=element_blank())
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
-g <- ggplot(data=rscomdata1,aes(x=date, y=price.int, colour=town)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Wheat prices")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank())
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
 
+rscomdata1 <- rscomdata1[complete.cases(rscomdata1),]
 
 repdata <- repsaledata(rscomdata1$lnprice,rscomdata1$counter,rscomdata1$id)  #transform the data to sales pairs
 repdata <- repdata[complete.cases(repdata),]
@@ -256,44 +253,26 @@ RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) 
 colnames(RS_index.ex) <- c("Date","x")
 RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
 
+index_plot <- cbind(RS_index.ex,"Index")
+index_plot <- index_plot[,c(1,3,2)]
+colnames(index_plot) <- c("date","town","price")
+index_plot <- rbind(index_plot, rscomdata[rscomdata$commodity=="wheat",c(2,3,4)])
+g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
+g <- g + geom_point(size = 0.5) 
+g <- g + geom_line()
+g <- g + ylab("Wheat prices")
+g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank())
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
 
 index_plot <- cbind(RS_index.ex,"Index")
 index_plot <- index_plot[,c(1,3,2)]
 colnames(index_plot) <- c("date","town","price")
-index_plot <- rbind(index_plot, rscomdata1[,c(2,3,4)])
-
 g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
-g <- g + geom_point(size = 2) 
-g <- g + geom_line()
-g <- g + ylab("Wheat prices")
-g <- g + xlab("")
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank())
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-RS_index.ex$int <- na.approx(RS_index.ex$Index,rule=2)
-index_plot <- cbind(RS_index.ex[,c(1,3)],"Index")
-index_plot <- index_plot[,c(1,3,2)]
-colnames(index_plot) <- c("date","town","price")
-index_plot <- rbind(index_plot, rscomdata1[,c(2,3,4)])
-
-g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Wheat prices")
-g <- g + xlab("")
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank())
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-
-index_plot <- melt(RS_index.ex, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 2) 
+g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
 g <- g + ylab("Wheat Index")
 g <- g + xlab("")
@@ -329,7 +308,7 @@ for(i in colnames(blue)[4:62]) {
 colnames(coms) <- c("Date",colnames(blue)[4:62])
 
 complot <- melt(coms, id="Date") 
-g <- ggplot(complot, aes(x=Date,value,colour=variable,fill=variable))
+g <- ggplot(complot, aes(x=Date,value))
 g <- g + geom_bar(stat="identity")
 g <- g + theme(legend.title=element_blank())
 g <- g + ylab("Total obs")
@@ -350,36 +329,363 @@ for(i in colnames(blue)[4:62]) {
 rsblue$lnprice <- log(rsblue$price)
 rsblue <- transform(rsblue, id = as.numeric(interaction(factor(town),factor(commodity),drop=TRUE)))
 
+#REPEAT SALES-----------------------------------
 rsblue1 <- rsblue[rsblue$commodity=="wheat",]
-#"wheat","mealies","eggs","tobacco","butter","beef"
-#rsblue1 <- rsblue1[rsblue1$town %in% cape,]
-
-rsblue1$price.int <- na.approx(rsblue1$price,rule=2)
+#rsblue1$price.int <- na.approx(rsblue1$price,rule=2)
 
 g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
-g <- g + geom_point(size = 2) 
-g <- g + geom_line()
-g <- g + ylab("Wheat prices")
-g <- g + xlab("")
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank())
-g
-
-g <- ggplot(data=rsblue1,aes(x=date, y=price.int, colour=town)) 
 g <- g + geom_point(size = 1) 
 g <- g + geom_line()
 g <- g + ylab("Wheat prices")
 g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.3,"cm"))
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + theme(legend.title=element_blank())
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g
+
+rsblue1 <- rsblue1[complete.cases(rsblue1),]
+repdata <- repsaledata(rsblue1$lnprice,rsblue1$date,rsblue1$id)  #transform the data to sales pairs
+repdata <- repdata[complete.cases(repdata),]
+repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
+                       graph=FALSE)   #generate the repeat sales index
+
+rs_index.a <- exp(as.data.frame(repeatsales$pindex))*100
+rs_index.a$Date <- seq(1,1,length.out = ncol(rs_index.a))
+rs_index.a$Date <- unique(rsblue$date)
+colnames(rs_index.a) <- c("Index","Date")
+
+index_plot <- melt(rs_index.a, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 2) 
+g <- g + geom_line()
+g <- g + ylab("Wheat Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g
+
+#---------------------
+#Temporal distribution
+#---------------------
+
+wheat.a <- rs_index.a
+ts.wheat.a <- as.ts(wheat.a[,-2], start=1889, end= 1907, frequency = 1)
+
+m1 <- td(ts.wheat.a ~ 1, to = "monthly", conversion = "last", method = "denton-cholette")
+plot(predict(m1))
+rs_index1 <- as.data.frame(predict(m1)[-1:-9])
+
+
+wheat.m <- RS_index.ex
+ts.wheat.m <- as.ts(wheat.m[,-1], start=c(1889,10),end=c(1914,8), frequency = 12)
+ts.wheat.m1 <- na.approx(ts.wheat.m, na.rm=FALSE)
+ts.wheat.m1 <- na.locf(ts.wheat.m1, na.rm=FALSE)
+ts.wheat.m1 <- na.locf(ts.wheat.m1, na.rm=FALSE, fromLast=TRUE)
+
+plot(ts.wheat.m)
+plot(ts.wheat.m1)
+
+m2 <- td(ts.wheat.a ~ 0 + ts.wheat.m1, to= "monthly", conversion = "last", method = "chow-lin-maxlog")
+summary(m2)
+plot(predict(m2))
+
+rs_index2 <- as.data.frame(predict(m2))
+
+#-------
+#Combine
+
+rs_index1$Date <- RS_index.ex$Date[-220:-299]
+rsdata <- merge(RS_index.ex,rs_index1,by="Date", all = TRUE)
+colnames(rsdata) <- c("Date","Com","Blue")
+rsdata <- melt(rsdata,id="Date")
+rsdata$lnprice <- log(rsdata$value)
+rsdata <- rsdata[complete.cases(rsdata),]
+
+repdata <- repsaledata(rsdata$lnprice,rsdata$Date,rsdata$variable)  #transform the data to sales pairs
+
+repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
+                       graph=FALSE)   #generate the repeat sales index
+
+Index <- exp(as.data.frame(repeatsales$pindex))*100
+Index$Date <- seq(1,1,length.out = ncol(Index))
+Index$Date <- sort(unique(c(repdata$time1,repdata$time0)))
+
+Index1 <- merge(RS_index.ex,Index,by="Date", all = TRUE)
+Index1 <- cbind(Index1,merge(RS_index.ex,rs_index1,by="Date", all = TRUE))[,-4:-5]
+colnames(Index1) <- c("Date","Journal_Index","Index","Blue_Index")
+
+index_plot <- melt(Index1, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Wheat Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 
-#==================================================================
-#REPEAT SALES by TOWN (e.g. Group by Cape Town)
-#==================================================================
+##===================================================================
+#Do this for all the commodities
+
+rscomdata1 <- rscomdata[rscomdata$commodity==c("pigs","swine"),]
+
+g <- ggplot(data=rscomdata1,aes(x=date, y=price, colour=town)) 
+g <- g + geom_point(size = 0.5) 
+g <- g + geom_line()
+g <- g + ylab("Prices")
+g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank())
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+
+rscomdata1 <- rscomdata1[complete.cases(rscomdata1),]
+repdata <- repsaledata(rscomdata1$lnprice,rscomdata1$counter,rscomdata1$id)  #transform the data to sales pairs
+#repdata <- repdata[complete.cases(repdata),]
+repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
+                       graph=FALSE)   #generate the repeat sales index
+
+RS_index <- exp(as.data.frame(repeatsales$pindex))*100
+RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
+RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(c(repdata$time1,repdata$time0))))][-1]
+colnames(RS_index) <- c("Index","Date")
+
+RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
+colnames(RS_index.ex) <- c("Date","x")
+RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
+
+index_plot <- cbind(RS_index.ex,"Index")
+index_plot <- index_plot[,c(1,3,2)]
+colnames(index_plot) <- c("date","town","price")
+index_plot <- rbind(index_plot, rscomdata[rscomdata$commodity=="pigs",c(2,3,4)])
+g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
+g <- g + geom_point(size = 0.5) 
+g <- g + geom_line()
+g <- g + ylab("Prices")
+g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank())
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+index_plot <- cbind(RS_index.ex,"Index")
+index_plot <- index_plot[,c(1,3,2)]
+colnames(index_plot) <- c("date","town","price")
+g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
+g <- g + geom_point(size = 0.5) 
+g <- g + geom_line()
+g <- g + ylab("Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+
+rsblue1 <- rsblue[rsblue$commodity=="argol",]
+rsblue1 <- rsblue[rsblue$commodity==c("pigs","swine"),]
+
+g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Prices")
+g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.3,"cm"))
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank())
+g
+
+rsblue1 <- rsblue1[complete.cases(rsblue1),]
+repdata <- repsaledata(rsblue1$lnprice,rsblue1$date,rsblue1$id)  #transform the data to sales pairs
+#repdata <- repdata[complete.cases(repdata),]
+repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
+                       graph=FALSE)   #generate the repeat sales index
+
+rs_index.a <- exp(as.data.frame(repeatsales$pindex))*100
+rs_index.a$Date <- seq(1,1,length.out = ncol(rs_index.a))
+rs_index.a$Date <- unique(rsblue1$date)
+colnames(rs_index.a) <- c("Index","Date")
+
+index_plot <- melt(rs_index.a, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 2) 
+g <- g + geom_line()
+g <- g + ylab("Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g
+
+
+wheat.a <- rs_index.a
+ts.wheat.a <- as.ts(wheat.a[,-2], start=1889, end= 1907, frequency = 1)
+m1 <- td(ts.wheat.a ~ 1, to = "monthly", conversion = "last", method = "denton-cholette")
+rs_index1 <- as.data.frame(predict(m1)[-1:-9])
+
+rs_index1$Date <- RS_index.ex$Date[-220:-299]
+rsdata <- merge(RS_index.ex,rs_index1,by="Date", all = TRUE)
+colnames(rsdata) <- c("Date","Com","Blue")
+rsdata <- melt(rsdata,id="Date")
+rsdata$lnprice <- log(rsdata$value)
+rsdata <- rsdata[complete.cases(rsdata),]
+
+repdata <- repsaledata(rsdata$lnprice,rsdata$Date,rsdata$variable)  #transform the data to sales pairs
+
+repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
+                       graph=FALSE)   #generate the repeat sales index
+
+Index <- exp(as.data.frame(repeatsales$pindex))*100
+Index$Date <- seq(1,1,length.out = ncol(Index))
+Index$Date <- sort(unique(c(repdata$time1,repdata$time0)))
+
+Index1 <- merge(RS_index.ex,Index,by="Date", all = TRUE)
+Index1 <- cbind(Index1,merge(RS_index.ex,rs_index1,by="Date", all = TRUE))[,-4:-5]
+colnames(Index1) <- c("Date","Journal_Index","Index","Blue_Index")
+
+index_plot <- melt(Index1, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Wheat Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+
+
+##===================================================================
+#Do this for all the commodities
+
+
+makeindex <- function(produk) {
+    rscomdata1 <- rscomdata[rscomdata$commodity==produk,]
+    if(nrow(rscomdata1)>0) {
+        rscomdata1 <- rscomdata1[complete.cases(rscomdata1),]
+        repdata <- repsaledata(rscomdata1$lnprice,rscomdata1$counter,rscomdata1$id)  
+        repdata <- repdata[complete.cases(repdata),]
+        repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,graph=FALSE)   
+        RS_index <- exp(as.data.frame(repeatsales$pindex))*100
+        RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
+        RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(c(repdata$time1,repdata$time0))))][-1]
+        colnames(RS_index) <- c("Journal_Index","Date")
+        RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
+        colnames(RS_index.ex) <- c("Date","x")
+        RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
+    } else { 
+        RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
+        colnames(RS_index.ex) <- c("Date","x")
+    }
+    
+    rsblue1 <- rsblue[rsblue$commodity==produk,]
+    if(nrow(rsblue1)>0) {
+        rsblue1 <- rsblue1[complete.cases(rsblue1),]
+        repdata <- repsaledata(rsblue1$lnprice,rsblue1$date,rsblue1$id)  
+        repdata <- repdata[complete.cases(repdata),]
+        repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,graph=FALSE)   
+        rs_index.a <- exp(as.data.frame(repeatsales$pindex))*100
+        rs_index.a$Date <- seq(1,1,length.out = ncol(rs_index.a))
+        rs_index.a$Date <- unique(rsblue$date)
+        colnames(rs_index.a) <- c("Index","Date")
+    
+        wheat.a <- rs_index.a
+        ts.wheat.a <- as.ts(wheat.a[,-2], start=1889, end= 1907, frequency = 1)
+        m1 <- td(ts.wheat.a ~ 1, to = "monthly", conversion = "last", method = "denton-cholette")
+        rs_index1 <- as.data.frame(predict(m1)[-1:-9])
+        rs_index1$Date <- RS_index.ex$Date[-220:-299]
+        rs_index1 <- merge(RS_index.ex,rs_index1,by="Date", all = TRUE)[,-2]
+        colnames(rs_index1) <- c("Date","Blue_Index")
+    } else {
+        rs_index1 <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x))) 
+    }
+    
+    if(nrow(rscomdata1)==0) { Index1 <- rs_index1 } 
+    if(nrow(rsblue1)==0)    { Index1 <- RS_index.ex }
+    
+    if(nrow(rscomdata1)>0 & nrow(rsblue1)>0) {
+        rsdata <- merge(RS_index.ex,rs_index1,by="Date", all = TRUE)
+        colnames(rsdata) <- c("Date","Journal_Index","Blue_Index")
+        rsdata <- melt(rsdata,id="Date")
+        rsdata$lnprice <- log(rsdata$value)
+        rsdata <- rsdata[complete.cases(rsdata),]
+        repdata <- repsaledata(rsdata$lnprice,rsdata$Date,rsdata$variable)  
+        repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,graph=FALSE)   
+        
+        Index <- exp(as.data.frame(repeatsales$pindex))*100
+        Index$Date <- seq(1,1,length.out = ncol(Index))
+        Index$Date <- sort(unique(c(repdata$time1,repdata$time0)))
+        Index1 <- merge(RS_index.ex,Index,by="Date", all = TRUE)
+        Index1 <- cbind(Index1,merge(RS_index.ex,rs_index1,by="Date", all = TRUE))[,-4:-5]
+        colnames(Index1) <- c("Date","Journal_Index","Index","Blue_Index")
+    }
+    return(Index1)
+}
+
+product <- makeindex("oranges") 
+
+index_plot <- melt(product, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+
+#AGRICULTURAL PRODUCE: Werk:
+#"wheat","oats","oathay","barley","rye","peas.beens","potatoes","tobacco",c("dried.fruit","d.fruit") 
+#c("wine","wine.better","wine.ordinary"),c("brandy","brandy.better","brandy.ordinary")
+
+#PASTORAL PRODUCTS: Werk:
+
+#LIVESTOCK: Werk:
+#"swine"
+
+#Uitgelos#Blue produkte:
+#"pumpkins","aloes","argol","pigs", 
+
+#Uitgelos#Com produkte:
+#"lucerne.hay","oranges"
+
+#Oor#comdata produkte:
+#"wheat.flour","boer.meal","mealie.meal","bread",
+#"beef","mutton","butter","eggs",
+#"cattle","sheep","s.horses","tr.oxen","m.cows","w.sheep"    
+
+#Oor#blue produkte:
+#"oatmeal","flour","bread","mutton","beef","pork","bacon","butter.fresh","butter.salt","cheese","tea","coffee","sugar","rice"
+#"salt","milk","cond.milk","candles","lamp.oil",
+#"s.horse","d.horse","mules","asses","d.oxen","m.cows","w.sheep","c.sheep","swine","goats","fowls","ducks","w.wool","u.wool",
+#"butter","fat.tallow","soap","hides","sheep.skins","goat.skins",   
+#"beer.eng","beer.col"
+
+#==================
+#comdata produkte:
+#"wheat","wheat.flour","boer.meal","mealies","mealie.meal","barley","oats","oathay","lucerne.hay","potatoes","tobacco"
+#"beef","mutton","butter","eggs","cattle","sheep","pigs","bread","oranges","s.horses","tr.oxen","m.cows","w.sheep"    
+
+#blue produkte:
+#"oatmeal","flour","bread","mutton","beef","pork","bacon","butter.fresh","butter.salt","cheese","tea","coffee","sugar","rice"
+#"tobacco","dried.fruit","salt","wine","brandy","beer.eng","beer.col","milk","cond.milk","candles","lamp.oil","s.horse"        
+#"d.horse","mules","asses","d.oxen","m.cows","w.sheep","c.sheep","swine","goats","fowls","ducks","w.wool","u.wool","butter"         
+#"fat.tallow","soap","hides","sheep.skins","goat.skins",
+#"wheat","barley","rye","oats","mealies","peas.beens","potatoes","wine.better","wine.ordinary"  
+#"brandy.better","brandy.ordinary","pumpkins","d.fruit","aloes","argol"     
+
+
+
+#====================================================================
+#REPEAT SALES by TOWN and COMMODITY (e.g. Group by Cape Town & Wheat)
+#====================================================================
 comnames1 <- c("wheat","mealies","eggs","tobacco","butter","beef","mutton")
 comnames2 <- c("wheat","wheat.flour","boer.meal","mealies","mealie.meal","barley","oats","oathay",
                "potatoes","tobacco","beef","mutton","butter","eggs")
@@ -389,12 +695,11 @@ comnames.all <- c("wheat","wheat.flour","boer.meal","mealies","mealie.meal","bar
 
 #-------------------------------------------------------------------
 
-rscomdata1 <- rscomdata[rscomdata$town =="Cape Town",]
-rscomdata1 <- rscomdata1[rscomdata1$commodity %in% comnames2,]
-
+rscomdata1 <- rscomdata[rscomdata$commodity=="wheat",]
+rscomdata1 <- rscomdata1[rscomdata1$town =="Beaufort West",]
 rscomdata1$price.int <- na.approx(rscomdata1$price,rule=2)
 
-g <- ggplot(data=rscomdata1,aes(x=date, y=price, colour=commodity)) 
+g <- ggplot(data=rscomdata1,aes(x=date, y=price)) 
 g <- g + geom_point(size = 2) 
 g <- g + geom_line()
 g <- g + ylab("Prices")
@@ -405,20 +710,39 @@ g <- g + theme(legend.title=element_blank())
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
-g <- ggplot(data=rscomdata1,aes(x=date, y=price.int, colour=commodity)) 
-g <- g + geom_point(size = 1) 
+rsblue1 <- rsblue[rsblue$commodity =="wheat",]
+rsblue1 <- rsblue1[rsblue1$town=="Beaufort West",]
+
+g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=commodity)) 
+g <- g + geom_point(size = 2) 
 g <- g + geom_line()
 g <- g + ylab("Prices")
 g <- g + xlab("")
+g <- g + theme(legend.key.size = unit(0.5,"cm"))
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + theme(legend.title=element_blank())
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
+wheat.a <- rsblue1$price
+#wheat.a <- dcast(rsblue1, date ~ commodity, mean, value.var="price")
+ts.wheat.a <- as.ts(wheat.a, start=1889, end= 1907, frequency = 1)
+ts.wheat.a1 <- na.approx(ts.wheat.a, na.rm=FALSE)
+ts.wheat.a1 <- na.locf(ts.wheat.a1, na.rm=FALSE)
+ts.wheat.a1 <- na.locf(ts.wheat.a1, na.rm=FALSE, fromLast=TRUE)
 
-repdata <- repsaledata(rscomdata1$lnprice,rscomdata1$counter,rscomdata1$id)  #transform the data to sales pairs
-repdata <- repdata[complete.cases(repdata),]
+m1 <- td(ts.wheat.a1 ~ 1, to = "monthly", conversion = "average", method = "denton-cholette")
+plot(predict(m1))
+
+wheat.am <- cbind(as.data.frame(RS_index.ex$Date[1:219]),as.data.frame(predict(m1)[-1:-9]))
+colnames(wheat.am) <- c("Date","Wheat")
+
+wheat.am[format(wheat.am$Date,'%Y') %in% rsblue1$date[is.na(rsblue1$price)],2] <- NA 
+wheat.am <- cbind(wheat.am, lnprice=log(wheat.am[,2]),counter=1:219, id=1)
+
+wheat.am1 <- rbind(wheat.am[,c(4,3,5)],rscomdata1[,c(1,6,7)])
+wheat.am1 <- wheat.am1[complete.cases(wheat.am1),]
+
+repdata <- repsaledata(wheat.am1$lnprice,wheat.am1$counter,wheat.am1$id)  #transform the data to sales pairs
 repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
                        graph=FALSE)   #generate the repeat sales index
 
@@ -426,62 +750,20 @@ RS_index <- exp(as.data.frame(repeatsales$pindex))*100
 RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
 RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(c(repdata$time1,repdata$time0))))][-1]
 colnames(RS_index) <- c("Index","Date")
-RS_index <- RS_index[complete.cases(RS_index),]
 
 RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
 colnames(RS_index.ex) <- c("Date","x")
 RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
+capewheat <- aggregate(rscomdata1$price, by=list(rscomdata1$date), FUN = mean)
 
 
-index_plot <- cbind(RS_index.ex,"Index")
-index_plot <- index_plot[,c(1,3,2)]
-colnames(index_plot) <- c("date","commodity","price")
-index_plot <- rbind(index_plot, rscomdata1[,c(2,5,4)])
+index_plot <- cbind(RS_index.ex, Cape = capewheat$x)
+index_plot <- merge(index_plot,wheat.am[,c(1,2)], by="Date", all=TRUE)
+colnames(index_plot) <- c("Date","Index","Beaufort West (lbs)","Blue Books (bushel)")
 
-g <- ggplot(data=index_plot,aes(x=date, y=price, colour=commodity)) 
-g <- g + geom_point(size = 3) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank())
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-RS_index.ex$int <- na.approx(RS_index.ex$Index,rule=2)
-
-index_plot <- cbind(RS_index.ex[,c(1,3)],"Index")
-index_plot <- index_plot[,c(1,3,2)]
-colnames(index_plot) <- c("date","commodity","price")
-index_plot <- rbind(index_plot, rscomdata1[,c(2,5,4)])
-
-g <- ggplot(data=index_plot,aes(x=date, y=price, colour=commodity)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank())
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-
-index_plot <- melt(RS_index.ex, id="Date")  # convert to long format
+index_plot <- melt(index_plot, id="Date")  # convert to long format
 g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 3) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-index_plot <- melt(RS_index, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
+g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
 g <- g + ylab("Index")
 g <- g + xlab("")
@@ -491,127 +773,61 @@ g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 #----------------------------------------------------------------------------------------------------------
-#======= Total: Almal aggregated
-#----------------------------------------------------------------------------------------------------------
-repdata <- repsaledata(rscomdata$lnprice,rscomdata$counter,rscomdata$id)  #transform the data to sales pairs
-repdata <- repdata[complete.cases(repdata),]
-repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,graph=FALSE)   #generate the repeat sales index
+#Temporally disaggregate almal in blue into town commodity pairs
+wheat.am <- as.data.frame(RS_index.ex$Date[1:219])
+colnames(wheat.am) <- "Date"
+rsblue1 <- rsblue[rsblue$commodity =="wheat",]
+tel <- 1
 
-RS_index <- exp(as.data.frame(repeatsales$pindex))*100
-RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
-RS_index <- RS_index[complete.cases(RS_index),]
-RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(repdata$time1)))]
-colnames(RS_index) <- c("Index","Date")
-
-RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
-colnames(RS_index.ex) <- c("Date","x")
-RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
-
-index_plot <- melt(RS_index.ex, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-index_plot <- melt(RS_index, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-#------------------------------------------------------------------------
-# old versions
-rscomdata1 <- rscomdata[rscomdata$commodity=="wheat",]
-#rscomdata1 <- rscomdata[rscomdata$commodity=="mealies",]
-#rscomdata1 <- rscomdata[rscomdata$commodity=="eggs",]
-
-#rscomdata1 <- rscomdata[rscomdata$town=="Cape Town",]
-#rscomdata1 <- rscomdata[rscomdata$town=="Kimberley",]
-#rscomdata1 <- rscomdata[rscomdata$town=="Bloemfontein",]
-#rscomdata1 <- rscomdata[rscomdata$town=="East London",]
-
-repdata <- repsaledata(rscomdata1$lnprice,rscomdata1$counter,rscomdata1$id)  #transform the data to sales pairs
-repdata <- repdata[complete.cases(repdata),]
-repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
-                       graph=FALSE)   #generate the repeat sales index
-
-RS_index <- exp(as.data.frame(repeatsales$pindex))*100
-RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
-#RS_index <- RS_index[complete.cases(RS_index),]
-#RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(repdata$time1)))]
-#colnames(RS_index) <- c("Index","Date")
-
-RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(c(repdata$time1,repdata$time0))))][-1]
-colnames(RS_index) <- c("Index","Date")
-RS_index <- RS_index[complete.cases(RS_index),]
-
-RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
-colnames(RS_index.ex) <- c("Date","x")
-RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
-
-
-index_plot <- melt(RS_index.ex, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-index_plot <- melt(RS_index, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-
-#-------------------------------------------------------------------
-
-RSindex <- function(rscomdata1, titel) {
-    repdata <- repsaledata(rscomdata1$lnprice,rscomdata1$counter,rscomdata1$id)  #transform the data to sales pairs
-    repdata <- repdata[complete.cases(repdata),]
-    repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,graph=FALSE)   #generate the repeat sales index
+for(i in levels(rsblue$town)) {
     
-    RS_index <- exp(as.data.frame(repeatsales$pindex))*100
-    RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
-    RS_index <- RS_index[complete.cases(RS_index),]
-    RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(repdata$time1)))]
-    colnames(RS_index) <- c(titel,"Date")
+    rsblue2 <- rsblue1[rsblue1$town==i,]
     
-    RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
-    colnames(RS_index.ex) <- c("Date","x")
-    RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
-    return(RS_index.ex)   
+    if(sum(!is.na(rsblue2$price))>1) { 
+        tel <- tel + 1
+        wheat.a <- rsblue2$price
+        ts.wheat.a <- as.ts(wheat.a, start=1889, end= 1907, frequency = 1)
+        ts.wheat.a1 <- na.approx(ts.wheat.a, na.rm=FALSE)
+        ts.wheat.a1 <- na.locf(ts.wheat.a1, na.rm=FALSE)
+        ts.wheat.a1 <- na.locf(ts.wheat.a1, na.rm=FALSE, fromLast=TRUE)
+        m1 <- td(ts.wheat.a1 ~ 1, to = "monthly", conversion = "average", method = "denton-cholette")
+        wheat.am <- cbind(wheat.am,i=as.data.frame(predict(m1)[-1:-9]))
+        wheat.am[format(wheat.am$Date,'%Y') %in% rsblue2$date[is.na(rsblue2$price)],tel] <- NA 
+        colnames(wheat.am)[tel] <- i
+    }
 }
 
-RS_index.c <- cbind(RSindex(rscomdata[rscomdata$commodity=="wheat",],"wheat"),
-                    RSindex(rscomdata[rscomdata$commodity=="mealies",],"mealies"),
-                    RSindex(rscomdata[rscomdata$commodity=="tobacco",],"tobacco"),
-                    RSindex(rscomdata[rscomdata$commodity=="eggs",],"eggs"))
 
-RS_index.c <- RS_index.c[,c(1,2,4,6,8)]
 
-index_plot <- melt(RS_index.c, id="Date")  # convert to long format
+wheat.am <- cbind(counter=1:219,lnprice=log(wheat.am),id=1)
+colnames(wheat.am) <- c("counter","lnprice","id")
+wheat.am <- rbind(wheat.am,rscomdata1[,c(1,6,7)])
+wheat.am <- wheat.am[complete.cases(wheat.am),]
+
+repdata <- repsaledata(wheat.am$lnprice,wheat.am$counter,wheat.am$id)  #transform the data to sales pairs
+repeatsales <- repsale(repdata$price0,repdata$time0,repdata$price1,repdata$time1,mergefirst=1,
+                       graph=FALSE)   #generate the repeat sales index
+
+RS_index <- exp(as.data.frame(repeatsales$pindex))*100
+RS_index$Date <- seq(1,1,length.out = ncol(RS_index))
+RS_index$Date <- unique(rscomdata$date)[c(1,sort(unique(c(repdata$time1,repdata$time0))))][-1]
+colnames(RS_index) <- c("Index","Date")
+
+RS_index.ex <- aggregate(comdata$town, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
+colnames(RS_index.ex) <- c("Date","x")
+RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
+capewheat <- aggregate(rscomdata1$price, by=list(rscomdata1$date), FUN = mean)
+
+
+index_plot <- cbind(RS_index.ex, Cape = capewheat$x)
+wheat.am <- as.data.frame(predict(m1)[-1:-9])
+wheat.am$Date <- index_plot$Date[1:219]
+index_plot <- merge(index_plot,wheat.am, by="Date", all=TRUE)
+colnames(index_plot) <- c("Date","Index","Cape Town (lbs)","Blue Books (bushel)")
+
+index_plot <- melt(index_plot, id="Date")  # convert to long format
 g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
+g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
 g <- g + ylab("Index")
 g <- g + xlab("")
@@ -620,37 +836,6 @@ g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
-RS_index.d <- cbind(RSindex(rscomdata[rscomdata$town=="Cape Town",],"Cape Town"),
-                    RSindex(rscomdata[rscomdata$town=="Kimberley",],"Kimberley"),
-                    RSindex(rscomdata[rscomdata$town=="Bloemfontein",],"Bloemfontein"),
-                    RSindex(rscomdata[rscomdata$town=="East London",],"East London"))
-
-RS_index.d <- RS_index.d[,c(1,2,4,6,8)]
-
-index_plot <- melt(RS_index.d, id="Date")  # convert to long format
-g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
-g <- g + geom_point(size = 1) 
-g <- g + geom_line()
-g <- g + ylab("Index")
-g <- g + xlab("")
-g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-g
-
-
-##============
-#Interpolation
-##============
-
-library(tempdisagg)
-td(formula, conversion = "sum", to = "quarterly", method = "chow-lin-maxlog",
-   truncated.rho = 0, fixed.rho = 0.5, criterion = "proportional", h = 1,
-   start = NULL, end = NULL, ...)
-
-m1 <- td(y.a ~ 1, conversion="average",to="monthly",method = "denton-cholette")
-m1 <- td(y.a ~ x1.q + x2.q, conversion="average",to="monthly",method = "litterman-minrss")
-y.q <- predict(m1)
 
 
 
