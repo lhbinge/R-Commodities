@@ -429,7 +429,7 @@ g
 ##===================================================================
 #Do this for all the commodities
 
-rscomdata1 <- rscomdata[rscomdata$commodity==c("pigs","swine"),]
+rscomdata1 <- rscomdata[rscomdata$commodity==c("cattle","d.oxen","m.cows","beef"),]
 
 g <- ggplot(data=rscomdata1,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 0.5) 
@@ -461,7 +461,7 @@ RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
 index_plot <- cbind(RS_index.ex,"Index")
 index_plot <- index_plot[,c(1,3,2)]
 colnames(index_plot) <- c("date","town","price")
-index_plot <- rbind(index_plot, rscomdata[rscomdata$commodity=="pigs",c(2,3,4)])
+index_plot <- rbind(index_plot, rscomdata[rscomdata$commodity=="beef",c(2,3,4)])
 g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
@@ -487,8 +487,7 @@ g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 
-rsblue1 <- rsblue[rsblue$commodity=="argol",]
-rsblue1 <- rsblue[rsblue$commodity==c("pigs","swine"),]
+rsblue1 <- rsblue[rsblue$commodity==c("cattle","d.oxen","m.cows","beef"),]
 
 g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 1) 
@@ -627,7 +626,7 @@ makeindex <- function(produk) {
     return(Index1)
 }
 
-product <- makeindex("oranges") 
+product <- makeindex(c("mealies")) 
 
 index_plot <- melt(product, id="Date")  # convert to long format
 g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
@@ -641,45 +640,226 @@ g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 
-#AGRICULTURAL PRODUCE: Werk:
-#"wheat","oats","oathay","barley","rye","peas.beens","potatoes","tobacco",c("dried.fruit","d.fruit") 
-#c("wine","wine.better","wine.ordinary"),c("brandy","brandy.better","brandy.ordinary")
-
-#PASTORAL PRODUCTS: Werk:
-
-#LIVESTOCK: Werk:
-#"swine"
-
-#Uitgelos#Blue produkte:
-#"pumpkins","aloes","argol","pigs", 
-
-#Uitgelos#Com produkte:
-#"lucerne.hay","oranges"
-
-#Oor#comdata produkte:
-#"wheat.flour","boer.meal","mealie.meal","bread",
-#"beef","mutton","butter","eggs",
-#"cattle","sheep","s.horses","tr.oxen","m.cows","w.sheep"    
-
-#Oor#blue produkte:
-#"oatmeal","flour","bread","mutton","beef","pork","bacon","butter.fresh","butter.salt","cheese","tea","coffee","sugar","rice"
-#"salt","milk","cond.milk","candles","lamp.oil",
-#"s.horse","d.horse","mules","asses","d.oxen","m.cows","w.sheep","c.sheep","swine","goats","fowls","ducks","w.wool","u.wool",
-#"butter","fat.tallow","soap","hides","sheep.skins","goat.skins",   
-#"beer.eng","beer.col"
-
 #==================
 #comdata produkte:
 #"wheat","wheat.flour","boer.meal","mealies","mealie.meal","barley","oats","oathay","lucerne.hay","potatoes","tobacco"
-#"beef","mutton","butter","eggs","cattle","sheep","pigs","bread","oranges","s.horses","tr.oxen","m.cows","w.sheep"    
+#"beef","mutton","butter","eggs","cattle","sheep","pigs","bread","oranges","s.horses","tr.oxen","mi.cows","w.sheep"    
 
 #blue produkte:
 #"oatmeal","flour","bread","mutton","beef","pork","bacon","butter.fresh","butter.salt","cheese","tea","coffee","sugar","rice"
 #"tobacco","dried.fruit","salt","wine","brandy","beer.eng","beer.col","milk","cond.milk","candles","lamp.oil","s.horse"        
 #"d.horse","mules","asses","d.oxen","m.cows","w.sheep","c.sheep","swine","goats","fowls","ducks","w.wool","u.wool","butter"         
 #"fat.tallow","soap","hides","sheep.skins","goat.skins",
-#"wheat","barley","rye","oats","mealies","peas.beens","potatoes","wine.better","wine.ordinary"  
+#"wheat","barley","rye","oats","mealies","peas.beans","potatoes","wine.better","wine.ordinary"  
 #"brandy.better","brandy.ordinary","pumpkins","d.fruit","aloes","argol"     
+
+
+#AGRICULTURAL PRODUCE: 
+#"wheat","barley","oats","oathay","rye","peas.beans","potatoes","tobacco",c("dried.fruit","d.fruit") 
+#c("wine","wine.better","wine.ordinary"),c("brandy","brandy.better","brandy.ordinary")
+produce <- cbind(wheat=makeindex("wheat")[,c(1,3)],mealies=makeindex("mealies")[,3],barley=makeindex("barley")[,3],oats=makeindex("oats")[,3],
+                 oathay=makeindex("oathay")[,2],rye=makeindex("rye")[,2],peas.beans=makeindex("peas.beans")[,2],
+                 potatoes=makeindex("potatoes")[,3],tobacco=makeindex("tobacco")[,3],d.fruit=makeindex(c("dried.fruit","d.fruit"))[,2],
+                 wine=makeindex(c("wine","wine.better","wine.ordinary"))[,2],brandy=makeindex(c("brandy","brandy.better","brandy.ordinary"))[,2]) 
+colnames(produce)[1:2] <- c("Date","wheat")
+
+#LIVESTOCK:
+#c("cattle","d.oxen","m.cows"),c("s.horse","d.horse","mules","asses"),c("sheep","w.sheep","c.sheep"),
+#"swine","goats",c("fowls","ducks")
+livestock <- cbind(cattle=makeindex(c("cattle","d.oxen","m.cows"))[,c(1,3)],horses=makeindex(c("s.horse","d.horse","mules","asses"))[,2],
+                   sheep=makeindex(c("sheep","w.sheep","c.sheep"))[,3],swine=makeindex("swine")[,2],goats=makeindex("goats")[,2],
+                   fowls=makeindex(c("fowls","ducks"))[,2]) 
+colnames(livestock)[1:2] <- c("Date","cattle")
+
+#PASTORAL PRODUCTS: 
+#c("butter","butter.fresh","butter.salt"),c("w.wool","u.wool"),"hides",c("sheep.skins","goat.skins"),"cheese","fat.tallow","soap"
+pastoral <- cbind(wool=makeindex(c("w.wool","u.wool"))[,1:2],hides=makeindex(c("hides"))[,2],skins=makeindex(c("sheep.skins","goat.skins"))[,2],
+                  butter=makeindex(c("butter","butter.fresh","butter.salt"))[,3],cheese=makeindex("cheese")[,2],
+                  fat.tallow=makeindex("fat.tallow")[,2],soap=makeindex("soap")[,2]) 
+colnames(pastoral)[1:2] <- c("Date","wool")
+
+#PROVISIONS: 
+#"beef","mutton",c("pork","bacon"),"eggs","bread",c("beer.eng","beer.col"),c("wheat.flour","flour"),"mealie.meal","boer.meal","oatmeal"
+#"tea","coffee","sugar","rice","salt","milk","candles"
+provisions <- cbind(beef=makeindex("beef")[,c(1,3)],mutton=makeindex("mutton")[,3],pork=makeindex(c("pork","bacon"))[,2],
+                    eggs=makeindex("eggs")[,2],bread=makeindex("bread")[,3],beer=makeindex(c("beer.eng","beer.col"))[,2],
+                    mealie.meal=makeindex("mealie.meal")[,2],boer.meal=makeindex("boer.meal")[,2],oatmeal=makeindex("oatmeal")[,2],
+                    tea=makeindex("tea")[,2],coffee=makeindex("coffee")[,2],sugar=makeindex("sugar")[,2],rice=makeindex("rice")[,2],
+                    salt=makeindex("salt")[,2],milk=makeindex("milk")[,2],candles=makeindex("candles")[,2])  
+colnames(provisions)[1:2] <- c("Date","beef")
+
+
+#Uitgelos:
+#Com produkte:"lucerne.hay","oranges","tr.oxen","mi.cows","s.horses",
+#Blue produkte:"pumpkins","aloes","argol","pigs","cond.milk" 
+
+index_plot <- melt(provisions, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
+
+#Calculate Average Prices for 1904
+gewig <- read.csv("Weights.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
+
+#colnames(livestock)[-1]
+#colnames(gewig)[20:25]
+#check <- priceIndex(colnames(livestock)[-1],colnames(gewig)[20:25],1,toets,na.rm=FALSE, weights = TRUE)
+
+
+##MOVE BUTTER TO PRODUCE OR PROVISIONS !!!!!
+toets <- produce
+for(j in 2:ncol(produce)) {   #maak eers die growth rates
+    toets[1,j] <- 1
+    for(i in 2:299) {
+        tel <- 0
+        repeat {
+            tel <- tel + 1 
+            if(!is.na(produce[i-tel,j])) {
+                toets[i,j] <- produce[i,j]/produce[i-tel,j]
+                break
+            }
+        }
+        
+    }
+}
+
+toets <- cbind(toets,gewig[,1:12])  #Kry dan weighted average
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:13],toets[i,14:25],na.rm=TRUE)
+}
+
+toets$produce[1] <- check[1,1]*100 
+for(i in 2:299) {        #maak dan die indeks
+    if(!is.na(toets$produce[i-1])) {
+        toets$produce[i] <- check[i,1]*toets$produce[i-1]
+    } else {
+        tel <- 1
+        repeat {
+            tel <- tel + 1 
+            if(!is.na(toets$produce[i-tel])) {
+                toets$produce[i] <- check[i,1]*toets$produce[i-tel]
+                break
+            }
+        }
+    }
+}
+
+produce$index <- toets$produce
+
+
+toets <- pastoral
+for(j in 2:ncol(pastoral)) {   #maak eers die growth rates
+    toets[1,j] <- 1
+    for(i in 2:299) {
+        tel <- 0
+        repeat {
+            tel <- tel + 1 
+            if(!is.na(pastoral[i-tel,j])) {
+                toets[i,j] <- pastoral[i,j]/pastoral[i-tel,j]
+                break
+            }
+        }
+        
+    }
+}
+
+toets <- cbind(toets,gewig[,13:19])  #Kry dan weighted average
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:8],toets[i,9:15],na.rm=TRUE)
+}
+
+toets$pastoral[1] <- check[1,1]*100 
+for(i in 2:299) {        #maak dan die indeks
+    if(!is.na(toets$pastoral[i-1])) {
+        toets$pastoral[i] <- check[i,1]*toets$pastoral[i-1]
+    } else {
+        tel <- 1
+        repeat {
+            tel <- tel + 1 
+            if(!is.na(toets$pastoral[i-tel])) {
+                toets$pastoral[i] <- check[i,1]*toets$pastoral[i-tel]
+                break
+            }
+        }
+    }
+}
+
+pastoral$index <- toets$pastoral
+
+
+toets <- livestock
+for(j in 2:ncol(livestock)) {   #maak eers die growth rates
+    toets[1,j] <- 1
+    for(i in 2:299) {
+        tel <- 0
+        repeat {
+            tel <- tel + 1 
+            if(!is.na(livestock[i-tel,j])) {
+                toets[i,j] <- livestock[i,j]/livestock[i-tel,j]
+                break
+            }
+        }
+        
+    }
+}
+
+toets <- cbind(toets,gewig[,20:25])  #Kry dan weighted average
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:7],toets[i,8:13],na.rm=TRUE)
+}
+
+toets$livestock[1] <- check[1,1]*100 
+for(i in 2:299) {        #maak dan die indeks
+    if(!is.na(toets$livestock[i-1])) {
+        toets$livestock[i] <- check[i,1]*toets$livestock[i-1]
+    } else {
+        tel <- 1
+        repeat {
+            tel <- tel + 1 
+            if(!is.na(toets$livestock[i-tel])) {
+                toets$livestock[i] <- check[i,1]*toets$livestock[i-tel]
+                break
+            }
+        }
+    }
+}
+
+livestock$index <- toets$livestock
+
+#----------------------------------
+toets <- cbind(produce,gewig[,1:12])
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:13],toets[i,14:25],na.rm=TRUE)
+}
+
+toets <- cbind(pastoral,gewig[,13:19])
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:8],toets[i,9:15],na.rm=TRUE)
+}
+
+toets <- cbind(livestock,gewig[,20:25])
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:7],toets[i,8:13],na.rm=TRUE)
+}
+
+toets <- cbind(provisions,gewig[,20:25])
+check <- data.frame()
+for(i in 1:299) {
+    check[i,1] <- weighted.mean(toets[i,2:7],toets[i,8:13],na.rm=TRUE)
+}
 
 
 
