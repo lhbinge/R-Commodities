@@ -1,4 +1,4 @@
-time_id,date,datum,Year,town,wheat,wheat.flour,boer.meal,mealies,mealie.meal,barley,oats,oathay,lucerne.hay,potatoes,tobacco,beef,mutton,butter,eggs,cattle,sheep,pigs,bread,oranges,s.horses,tr.oxen,mi.cows,w.sheep
+time_id,date,datum,Year,town,wheat,wheat.flour,boer.meal,mealies,mealie.meal,barley,oats,oathay,lucerne.hay,potatoes,tobacco,beef,mutton,butter,eggs,cattle,sheep,pigs,bread,oranges,s.horses,tr.oxen,mi.cows,wo.sheep
 1,1989/10/01,October,1889,Aliwal North,,,,,,,,,,,,,,,,,,,,,,,,
 2,1989/11/01,November,1889,Aliwal North,144,,180,96,,114,,150,,180,,4,4,30,12,,,,,,2160,1560,1320,180
 3,1989/12/01,December,1889,Aliwal North,156,,180,96,,114,,78,,204,,5,5,15,12,,,,,,2400,1680,1440,180

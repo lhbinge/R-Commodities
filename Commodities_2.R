@@ -5,48 +5,122 @@
 ##=====================##
 ## READING IN THE DATA ##
 ##=====================##
-library(zoo)            
-library(ggplot2)
-library(plyr)
-library(dplyr)
-library(reshape2)
-library(stargazer)
-library(micEcon)
-library(quantreg)
-library(McSpatial)
-library(quantmod)
-library(xtable)
-library(scales)
-library(tseries)
-library(urca)
-library(lmtest)
-library(grid)
-library(tempdisagg)
+suppressMessages(library(zoo))           
+suppressMessages(library(ggplot2))
+suppressMessages(library(plyr))
+suppressMessages(library(dplyr))
+suppressMessages(library(reshape2))
+suppressMessages(library(stargazer))
+suppressMessages(library(micEcon))
+suppressMessages(library(quantreg))
+suppressMessages(library(McSpatial))
+suppressMessages(library(quantmod))
+suppressMessages(library(xtable))
+suppressMessages(library(scales))
+suppressMessages(library(tseries))
+suppressMessages(library(urca))
+suppressMessages(library(lmtest))
+suppressMessages(library(grid))
+suppressMessages(library(tempdisagg))
 
 setwd("C:\\Users\\Laurie\\OneDrive\\Documents\\BING\\Commodity Cycles\\R Commodities")
 
-comdata <- read.csv("Commodities.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
+##=====================
+##Other series
+##=====================
+GDP <- read.csv("Series.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
+GDP$Date <- as.Date(GDP$Date)
 
+##For Grpahing Business cycles
+recessions.df = read.table(textConnection(
+    "Peak, Trough
+    1862-01-01, 1864-01-01
+    1869-01-01, 1870-01-01
+    1873-01-01, 1874-01-01
+    1877-01-01, 1879-01-01
+    1881-01-01, 1886-01-01
+    1893-01-01, 1896-01-01
+    1899-01-01, 1902-01-01
+    1905-01-01, 1909-01-01"), sep=',',
+    colClasses=c('Date','Date'), header=TRUE)
+
+indicator_plot <- GDP[,c("Date","lnRGDP")]
+g <- ggplot(indicator_plot) 
+g <- g + theme_bw()
+g <- g + labs(color="Legend text")
+g <- g + geom_line(aes(x=Date, y=lnRGDP, colour="lnRGDP"), size = 1)
+g <- g + geom_rect(data=recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
+g <- g + ylab("log Real GDP")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g <- g + theme(legend.position="none") 
+g
+
+trade <- read.csv("Trade.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
+trade$Date <- as.Date(trade$Date)
+
+##For Grpahing Business cycles
+recessions.df = read.table(textConnection(
+    "Peak, Trough
+    1893-01-01, 1896-01-01
+    1899-01-01, 1902-01-01
+    1905-01-01, 1909-01-01"), sep=',',
+    colClasses=c('Date','Date'), header=TRUE)
+
+indicator_plot <- trade[,c("Date","Imports","Exports","Trade_Balance")]
+g <- ggplot(indicator_plot) 
+g <- g + theme_bw()
+g <- g + labs(color="Legend text")
+g <- g + geom_line(aes(x=Date, y=Imports, colour="Imports"), size = 1)
+g <- g + geom_line(aes(x=Date, y=Exports, colour="Exports"), size = 1)
+#g <- g + geom_bar(aes(x=Date, y=Trade_Balance, fill="Trade_Balance"),size = 0.5,stat="identity")
+g <- g + geom_rect(data=recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_y_continuous(name="Value (pounds)", labels = comma)
+g
+
+##=====================
+##Agricultural Journals
+##=====================
+
+comdata <- read.csv("Commodities.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 #comdata$date <- as.Date(comdata$date, "%Y/%m/%d")
 comdata$datum <- paste(comdata$datum, comdata$Year)
 comdata$date <- as.Date(as.yearmon(as.character(comdata$datum),"%B %Y"))
 comdata$datum <- factor(as.yearmon(as.character(comdata$datum),"%B %Y"))
 
+#-------------------------------------------------------------------
+wc.towns <- c("Beaufort West","Cape Town","Clanwilliam","Malmesbury","Mossel Bay","Worcester")
+ec.towns <- c("Aliwal North","Burghersdorp","Cradock","Dordrecht","East London","Graaff-Reinet","Graham's Town",
+              "King William's Town","Port Alfred","Port Elizabeth","Queen's Town","Tarkastad")
+kzn.towns <- c("Pietermaritzburg, Natal","Durban, Natal")
+in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Johannesburg","Kimberley","Pretoria","Salisbury","Vryburg")
+cape <- c(wc.towns,ec.towns)
+col.towns <- c(cape,kzn.towns)
+all.towns <- c(wc.towns,ec.towns,kzn.towns,in.towns)
 
-
+comdata <- comdata[comdata$town %in% cape,]
+#-------------------------------------------------------------------
 coms <- aggregate(comdata$wheat, by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
 for(i in colnames(comdata)[7:29]) {
     coms1 <- aggregate(comdata[,i], by=list(comdata$date), FUN = function(x) sum(!is.na(x)))
     coms <- merge(coms, coms1, by="Group.1",all.x=TRUE)
 }
 colnames(coms) <- c("Date",colnames(comdata)[6:29])
+rm(coms1)
+
 
 complot <- melt(coms, id="Date") 
+complot$value[complot$value=="0"] <- NA
 g <- ggplot(complot, aes(x=Date,value,colour=variable,fill=variable))
 g <- g + geom_bar(stat="identity")
 g <- g + theme(legend.title=element_blank())
-g <- g + ylab("Total obs")
-g <- g + theme(legend.key.size = unit(0.5,"cm"))
+g <- g + ylab("Total observations")
+g <- g + theme(legend.key.size = unit(0.4,"cm"))
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
@@ -182,7 +256,6 @@ colnames(toy)[c(1,5)] <- c("Date","Index")
 ## REPEAT SALES INDEX ##
 ##====================##
 
-
 rscomdata <- comdata[,c("time_id","date","town","wheat")]
 rscomdata$commodity <- "wheat"
 colnames(rscomdata) <- c("counter","date","town","price","commodity")
@@ -199,26 +272,9 @@ rscomdata <- transform(rscomdata, id = as.numeric(interaction(factor(town),facto
 #==================================================================
 #REPEAT SALES by Commodity (e.g. Group by Wheat)
 #==================================================================
-wc.towns <- c("Beaufort West","Cape Town","Clanwilliam","Malmesbury","Mossel Bay","Worcester")
 
-ec.towns <- c("Aliwal North","Burghersdorp","Cradock","Dordrecht","East London","Graaff-Reinet","Graham's Town",
-              "King William's Town","Port Alfred","Port Elizabeth","Queen's Town","Tarkastad")
 
-kzn.towns <- c("Pietermaritzburg, Natal","Durban, Natal")
-
-#in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Kimberley","Pretoria","Salisbury","Vryburg")
-in.towns <- c("Bloemfontein","Bulawayo","Colesberg","Johannesburg","Kimberley","Pretoria","Salisbury","Vryburg")
-
-cape <- c(wc.towns,ec.towns)
-col.towns <- c(cape,kzn.towns)
-all.towns <- c(wc.towns,ec.towns,kzn.towns,in.towns)
-
-#wtest <- c("Beaufort West","Cape Town","Worcester")
-
-rscomdata <- rscomdata[rscomdata$town %in% cape,]
-#-------------------------------------------------------------------
-
-rscomdata1 <- rscomdata[rscomdata$commodity=="wheat",]
+rscomdata1 <- rscomdata[rscomdata$commodity==c("wheat"),]
 #"wheat","mealies","eggs","tobacco","butter","beef"
 #rscomdata1 <- rscomdata1[rscomdata1$counter >20 & rscomdata1$counter <31 ,]
 #rscomdata1$price.int <- na.approx(rscomdata1$price,rule=2)
@@ -297,7 +353,6 @@ g
 ##=================##
 ## BLUE BOOKS DATA ##
 ##=================##
-
 blue <- read.csv("Blue_Books.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 
 coms <- aggregate(blue$oatmeal, by=list(blue$date), FUN = function(x) sum(!is.na(x)))
@@ -330,7 +385,7 @@ rsblue$lnprice <- log(rsblue$price)
 rsblue <- transform(rsblue, id = as.numeric(interaction(factor(town),factor(commodity),drop=TRUE)))
 
 #REPEAT SALES-----------------------------------
-rsblue1 <- rsblue[rsblue$commodity=="wheat",]
+rsblue1 <- rsblue[rsblue$commodity==c("wheat"),]
 #rsblue1$price.int <- na.approx(rsblue1$price,rule=2)
 
 g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
@@ -367,15 +422,18 @@ g
 #---------------------
 #Temporal distribution
 #---------------------
-
+#Opsie1: Interpoleer annual based on last
 wheat.a <- rs_index.a
 ts.wheat.a <- as.ts(wheat.a[,-2], start=1889, end= 1907, frequency = 1)
+ts.wheat.a1 <- na.approx(ts.wheat.a, na.rm=FALSE)
+ts.wheat.a1 <- na.locf(ts.wheat.a1, na.rm=FALSE)
+ts.wheat.a1 <- na.locf(ts.wheat.a1, na.rm=FALSE, fromLast=TRUE)
 
-m1 <- td(ts.wheat.a ~ 1, to = "monthly", conversion = "last", method = "denton-cholette")
+m1 <- td(ts.wheat.a1 ~ 1, to = "monthly", conversion = "last", method = "denton-cholette")
 plot(predict(m1))
 rs_index1 <- as.data.frame(predict(m1)[-1:-9])
 
-
+#Opsie2: Interpoleer based on indicator variable
 wheat.m <- RS_index.ex
 ts.wheat.m <- as.ts(wheat.m[,-1], start=c(1889,10),end=c(1914,8), frequency = 12)
 ts.wheat.m1 <- na.approx(ts.wheat.m, na.rm=FALSE)
@@ -385,17 +443,40 @@ ts.wheat.m1 <- na.locf(ts.wheat.m1, na.rm=FALSE, fromLast=TRUE)
 plot(ts.wheat.m)
 plot(ts.wheat.m1)
 
-m2 <- td(ts.wheat.a ~ 0 + ts.wheat.m1, to= "monthly", conversion = "last", method = "chow-lin-maxlog")
+RS_index.ex2 <- as.data.frame(ts.wheat.m1)
+RS_index.ex2$Date <- RS_index.ex$Date
+
+
+m2 <- td(ts.wheat.a1 ~ 0 + ts.wheat.m1, to= "monthly", conversion = "last", method = "chow-lin-maxlog")
 summary(m2)
 plot(predict(m2))
 
 rs_index2 <- as.data.frame(predict(m2))
 
+#Opsie3: Interpoleer net eenvoudig
+rs_index.a$Date <- paste(rs_index.a$Date,"-12-01",sep="")
+rs_index.a$Date <- as.Date(rs_index.a$Date)
+rs_index3 <- merge(RS_index.ex,rs_index.a,by="Date",all=TRUE)
+
+wheat.m <- rs_index3
+ts.wheat.m <- as.ts(wheat.m[,2:3], start=c(1889,10),end=c(1914,8), frequency = 12)
+ts.wheat.m1 <- na.approx(ts.wheat.m, na.rm=FALSE)
+#ts.wheat.m1 <- na.locf(ts.wheat.m1, na.rm=FALSE)
+#ts.wheat.m1 <- na.locf(ts.wheat.m1, na.rm=FALSE, fromLast=TRUE)
+
+plot(ts.wheat.m)
+plot(ts.wheat.m1)
+
+rs_index3[,2:3] <- ts.wheat.m1
 #-------
 #Combine
 
-rs_index1$Date <- RS_index.ex$Date[-220:-299]
-rsdata <- merge(RS_index.ex,rs_index1,by="Date", all = TRUE)
+#rs_index1$Date <- RS_index.ex$Date[-220:-299]
+#rs_index1$Date <- RS_index.ex$Date
+#rsdata <- merge(RS_index.ex,rs_index1,by="Date", all = TRUE)
+#rsdata <- merge(RS_index.ex2,rs_index1,by="Date", all = TRUE)
+rsdata<-rs_index3
+
 colnames(rsdata) <- c("Date","Com","Blue")
 rsdata <- melt(rsdata,id="Date")
 rsdata$lnprice <- log(rsdata$value)
@@ -410,8 +491,10 @@ Index <- exp(as.data.frame(repeatsales$pindex))*100
 Index$Date <- seq(1,1,length.out = ncol(Index))
 Index$Date <- sort(unique(c(repdata$time1,repdata$time0)))
 
+#Index1 <- merge(RS_index.ex2,Index,by="Date", all = TRUE)
 Index1 <- merge(RS_index.ex,Index,by="Date", all = TRUE)
-Index1 <- cbind(Index1,merge(RS_index.ex,rs_index1,by="Date", all = TRUE))[,-4:-5]
+#Index1 <- cbind(Index1,merge(RS_index.ex,rs_index1,by="Date", all = TRUE))[,-4:-5]
+Index1 <- cbind(Index1,merge(RS_index.ex,rs_index.a,by="Date", all = TRUE))[,-4:-5]
 colnames(Index1) <- c("Date","Journal_Index","Index","Blue_Index")
 
 index_plot <- melt(Index1, id="Date")  # convert to long format
@@ -426,10 +509,27 @@ g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 
+#Index1 <- merge(RS_index.ex2,Index,by="Date", all = TRUE)
+Index1 <- merge(RS_index.ex,Index,by="Date", all = TRUE)
+#Index1 <- cbind(Index1,merge(RS_index.ex,rs_index1,by="Date", all = TRUE))[,-4:-5]
+Index1 <- cbind(Index1[,-2],rs_index3[,2:3])
+colnames(Index1) <- c("Date","Total_Index","Journal_Index","Blue_Index")
+
+index_plot <- melt(Index1, id="Date")  # convert to long format
+g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
+g <- g + geom_point(size = 1) 
+g <- g + geom_line()
+g <- g + ylab("Wheat Index")
+g <- g + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g
+
 ##===================================================================
 #Do this for all the commodities
 
-rscomdata1 <- rscomdata[rscomdata$commodity==c("cattle","d.oxen","m.cows","beef"),]
+rscomdata1 <- rscomdata[rscomdata$commodity==c("wheat"),]
 
 g <- ggplot(data=rscomdata1,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 0.5) 
@@ -461,7 +561,7 @@ RS_index.ex <- merge(RS_index.ex, RS_index, by="Date", all=TRUE)[,-2]
 index_plot <- cbind(RS_index.ex,"Index")
 index_plot <- index_plot[,c(1,3,2)]
 colnames(index_plot) <- c("date","town","price")
-index_plot <- rbind(index_plot, rscomdata[rscomdata$commodity=="beef",c(2,3,4)])
+index_plot <- rbind(index_plot, rscomdata[rscomdata$commodity=="wheat",c(2,3,4)])
 g <- ggplot(data=index_plot,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
@@ -487,7 +587,7 @@ g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 
-rsblue1 <- rsblue[rsblue$commodity==c("cattle","d.oxen","m.cows","beef"),]
+rsblue1 <- rsblue[rsblue$commodity==c("wheat"),]
 
 g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 1) 
@@ -595,6 +695,10 @@ makeindex <- function(produk) {
     
         wheat.a <- rs_index.a
         ts.wheat.a <- as.ts(wheat.a[,-2], start=1889, end= 1907, frequency = 1)
+        ts.wheat.a <- na.approx(ts.wheat.a, na.rm=FALSE)
+        ts.wheat.a <- na.locf(ts.wheat.a, na.rm=FALSE)
+        ts.wheat.a <- na.locf(ts.wheat.a, na.rm=FALSE, fromLast=TRUE)
+        
         m1 <- td(ts.wheat.a ~ 1, to = "monthly", conversion = "last", method = "denton-cholette")
         rs_index1 <- as.data.frame(predict(m1)[-1:-9])
         rs_index1$Date <- RS_index.ex$Date[-220:-299]
@@ -626,7 +730,7 @@ makeindex <- function(produk) {
     return(Index1)
 }
 
-product <- makeindex(c("mealies")) 
+product <- makeindex(c("s.horse","d.horse","mules","asses")) 
 
 index_plot <- melt(product, id="Date")  # convert to long format
 g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
@@ -654,66 +758,177 @@ g
 #"brandy.better","brandy.ordinary","pumpkins","d.fruit","aloes","argol"     
 
 
-#AGRICULTURAL PRODUCE: 
+#AGRICULTURAL PRODUCE (8 + 5): 
 #"wheat","barley","oats","oathay","rye","peas.beans","potatoes","tobacco",c("dried.fruit","d.fruit") 
 #c("wine","wine.better","wine.ordinary"),c("brandy","brandy.better","brandy.ordinary")
-produce <- cbind(wheat=makeindex("wheat")[,c(1,3)],mealies=makeindex("mealies")[,3],barley=makeindex("barley")[,3],oats=makeindex("oats")[,3],
-                 oathay=makeindex("oathay")[,2],rye=makeindex("rye")[,2],peas.beans=makeindex("peas.beans")[,2],
-                 potatoes=makeindex("potatoes")[,3],tobacco=makeindex("tobacco")[,3],d.fruit=makeindex(c("dried.fruit","d.fruit"))[,2],
-                 wine=makeindex(c("wine","wine.better","wine.ordinary"))[,2],brandy=makeindex(c("brandy","brandy.better","brandy.ordinary"))[,2]) 
-colnames(produce)[1:2] <- c("Date","wheat")
+crops <- cbind(wheat=makeindex("wheat")[,c(1,3)],mealies=makeindex("mealies")[,3],barley=makeindex("barley")[,3],oats=makeindex("oats")[,3],
+               oathay=makeindex("oathay")[,2],rye=makeindex("rye")[,2],peas.beans=makeindex("peas.beans")[,2],
+               potatoes=makeindex("potatoes")[,3])
+colnames(crops)[1:2] <- c("Date","wheat")
 
-#LIVESTOCK:
-#c("cattle","d.oxen","m.cows"),c("s.horse","d.horse","mules","asses"),c("sheep","w.sheep","c.sheep"),
+produce <- cbind(tobacco=makeindex("tobacco")[,c(1,3)],d.fruit=makeindex(c("dried.fruit","d.fruit"))[,2],
+                 wine=makeindex(c("wine","wine.better","wine.ordinary"))[,2],brandy=makeindex(c("brandy","brandy.better","brandy.ordinary"))[,2]) 
+colnames(produce)[1:2] <- c("Date","tobacco")
+
+#PASTORAL PRODUCTS (6): 
+#c("w.wool","u.wool"),"hides",c("sheep.skins","goat.skins"),"cheese","fat.tallow","soap"
+pastoral <- cbind(wool=makeindex(c("w.wool","u.wool"))[,1:2],hides=makeindex(c("hides"))[,2],skins=makeindex(c("sheep.skins","goat.skins"))[,2],
+                  cheese=makeindex("cheese")[,2],fat.tallow=makeindex("fat.tallow")[,2],soap=makeindex("soap")[,2]) 
+colnames(pastoral)[1:2] <- c("Date","wool")
+
+#LIVESTOCK (6):
+#c("cattle","tr.oxen","mi.cows","d.oxen","m.cows"),c("s.horse","d.horse","mules","asses"),c("sheep","wo.sheep","w.sheep","c.sheep"),
 #"swine","goats",c("fowls","ducks")
-livestock <- cbind(cattle=makeindex(c("cattle","d.oxen","m.cows"))[,c(1,3)],horses=makeindex(c("s.horse","d.horse","mules","asses"))[,2],
-                   sheep=makeindex(c("sheep","w.sheep","c.sheep"))[,3],swine=makeindex("swine")[,2],goats=makeindex("goats")[,2],
+livestock <- cbind(cattle=makeindex(c("cattle","tr.oxen","mi.cows","d.oxen","m.cows"))[,c(1,3)],horses=makeindex(c("s.horse","d.horse","mules","asses"))[,2],
+                   sheep=makeindex(c("sheep","wo.sheep","w.sheep","c.sheep"))[,3],swine=makeindex("swine")[,2],goats=makeindex("goats")[,2],
                    fowls=makeindex(c("fowls","ducks"))[,2]) 
 colnames(livestock)[1:2] <- c("Date","cattle")
 
-#PASTORAL PRODUCTS: 
-#c("butter","butter.fresh","butter.salt"),c("w.wool","u.wool"),"hides",c("sheep.skins","goat.skins"),"cheese","fat.tallow","soap"
-pastoral <- cbind(wool=makeindex(c("w.wool","u.wool"))[,1:2],hides=makeindex(c("hides"))[,2],skins=makeindex(c("sheep.skins","goat.skins"))[,2],
-                  butter=makeindex(c("butter","butter.fresh","butter.salt"))[,3],cheese=makeindex("cheese")[,2],
-                  fat.tallow=makeindex("fat.tallow")[,2],soap=makeindex("soap")[,2]) 
-colnames(pastoral)[1:2] <- c("Date","wool")
-
-#PROVISIONS: 
-#"beef","mutton",c("pork","bacon"),"eggs","bread",c("beer.eng","beer.col"),c("wheat.flour","flour"),"mealie.meal","boer.meal","oatmeal"
+#PROVISIONS (6 + 5 + 7): 
+#"beef","mutton",c("pork","bacon"),"eggs",c("butter","butter.fresh","butter.salt"),"bread",c("beer.eng","beer.col"),c("wheat.flour","flour"),"mealie.meal","boer.meal","oatmeal"
 #"tea","coffee","sugar","rice","salt","milk","candles"
-provisions <- cbind(beef=makeindex("beef")[,c(1,3)],mutton=makeindex("mutton")[,3],pork=makeindex(c("pork","bacon"))[,2],
-                    eggs=makeindex("eggs")[,2],bread=makeindex("bread")[,3],beer=makeindex(c("beer.eng","beer.col"))[,2],
-                    mealie.meal=makeindex("mealie.meal")[,2],boer.meal=makeindex("boer.meal")[,2],oatmeal=makeindex("oatmeal")[,2],
-                    tea=makeindex("tea")[,2],coffee=makeindex("coffee")[,2],sugar=makeindex("sugar")[,2],rice=makeindex("rice")[,2],
-                    salt=makeindex("salt")[,2],milk=makeindex("milk")[,2],candles=makeindex("candles")[,2])  
-colnames(provisions)[1:2] <- c("Date","beef")
+p.provisions <- cbind(beef=makeindex("beef")[,c(1,3)],mutton=makeindex("mutton")[,3],pork=makeindex(c("pork","bacon"))[,2],
+                      eggs=makeindex("eggs")[,2],butter=makeindex(c("butter","butter.fresh","butter.salt"))[,3],milk=makeindex("milk")[,2])
+colnames(p.provisions)[1:2] <- c("Date","beef")
+
+a.provisions <- cbind(bread=makeindex("bread")[,c(1,3)],flour=makeindex(c("wheat.flour","flour"))[,3],
+                      mealie.meal=makeindex("mealie.meal")[,2],boer.meal=makeindex("boer.meal")[,2],oatmeal=makeindex("oatmeal")[,2])
+colnames(a.provisions)[1:2] <- c("Date","bread")
+
+o.provisions <- cbind(tea=makeindex("tea")[,c(1,2)],coffee=makeindex("coffee")[,2],sugar=makeindex("sugar")[,2],beer=makeindex(c("beer.eng","beer.col"))[,2],
+                      rice=makeindex("rice")[,2],salt=makeindex("salt")[,2],candles=makeindex("candles")[,2])
+colnames(o.provisions)[1:2] <- c("Date","tea")
 
 
 #Uitgelos:
 #Com produkte:"lucerne.hay","oranges","tr.oxen","mi.cows","s.horses",
-#Blue produkte:"pumpkins","aloes","argol","pigs","cond.milk" 
+#Blue produkte:"pumpkins","aloes","argol","pigs","cond.milk","lamp.oil" 
 
-index_plot <- melt(provisions, id="Date")  # convert to long format
+index_plot <- melt(indices, id="Date")  # convert to long format
 g <- ggplot(data=index_plot,aes(x=Date, y=value, group=variable, colour=variable)) 
 g <- g + geom_point(size = 1) 
 g <- g + geom_line()
 g <- g + ylab("Index")
 g <- g + xlab("")
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
+g <- g + theme(legend.title=element_blank()) 
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g
 
 
+
 #Calculate Average Prices for 1904
 gewig <- read.csv("Weights.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
+
+
+#----------------------------------
+
+crops[,-1] <- na.approx(crops[,-1], na.rm=FALSE)
+crops[,-1] <- na.locf(crops[,-1], na.rm=FALSE)
+toets <- cbind(crops,gewig[,1:8])
+for(i in 1:299) {
+    crops[i,10] <- weighted.mean(toets[i,2:9],toets[i,10:17],na.rm=TRUE)
+}
+colnames(crops)[10] <- "Crops"
+
+
+produce[,-1] <- na.approx(produce[,-1], na.rm=FALSE)
+produce[,-1] <- na.locf(produce[,-1], na.rm=FALSE)
+toets <- cbind(produce,gewig[,9:12])
+for(i in 1:299) {
+    produce[i,6] <- weighted.mean(toets[i,2:5],toets[i,6:9],na.rm=TRUE)
+}
+colnames(produce)[6] <- "Produce"
+
+
+
+pastoral[,-1] <- na.approx(pastoral[,-1], na.rm=FALSE)
+pastoral[,-1] <- na.locf(pastoral[,-1], na.rm=FALSE)
+toets <- cbind(pastoral,gewig[,13:18])
+for(i in 1:299) {
+    pastoral[i,8] <- weighted.mean(toets[i,2:7],toets[i,8:13],na.rm=TRUE)
+}
+colnames(pastoral)[8] <- "Pastoral"
+
+
+livestock[,-1] <- na.approx(livestock[,-1], na.rm=FALSE)
+livestock[,-1] <- na.locf(livestock[,-1], na.rm=FALSE)
+toets <- cbind(livestock,gewig[,19:24])
+for(i in 1:299) {
+    livestock[i,8] <- weighted.mean(toets[i,2:7],toets[i,8:13],na.rm=TRUE)
+}
+colnames(livestock)[8] <- "Livestock"
+
+
+p.provisions[,-1] <- na.approx(p.provisions[,-1], na.rm=FALSE)
+p.provisions[,-1] <- na.locf(p.provisions[,-1], na.rm=FALSE)
+toets <- cbind(p.provisions,gewig[,25:30])
+for(i in 1:299) {
+    p.provisions[i,8] <- weighted.mean(toets[i,2:7],toets[i,8:13],na.rm=TRUE)
+}
+colnames(p.provisions)[8] <- "P.Provisions"
+
+
+a.provisions[,-1] <- na.approx(a.provisions[,-1], na.rm=FALSE)
+a.provisions[,-1] <- na.locf(a.provisions[,-1], na.rm=FALSE)
+toets <- cbind(a.provisions,gewig[,31:35])
+for(i in 1:299) {
+    a.provisions[i,7] <- weighted.mean(toets[i,2:6],toets[i,7:11],na.rm=TRUE)
+}
+colnames(a.provisions)[7] <- "A.Provisions"
+
+
+o.provisions[,-1] <- na.approx(o.provisions[,-1], na.rm=FALSE)
+o.provisions[,-1] <- na.locf(o.provisions[,-1], na.rm=FALSE)
+toets <- cbind(o.provisions,gewig[,36:42])
+for(i in 1:299) {
+    o.provisions[i,9] <- weighted.mean(toets[i,2:8],toets[i,9:15],na.rm=TRUE)
+}
+colnames(o.provisions)[9] <- "O.Provisions"
+
+
+indices <- cbind(crops[,c("Date","Crops")],produce[,"Produce"],pastoral[,"Pastoral"],livestock[,"Livestock"],
+                 p.provisions[,"P.Provisions"],a.provisions[,"A.Provisions"],o.provisions[,"O.Provisions"])
+colnames(indices) <- c("Date","Crops","Produce","Pastoral","Livestock","P.Provisions","A.Provisions","O.Provisions")
+
+toets <- cbind(indices,gewig[,43:49])
+for(i in 1:299) {
+    indices[i,9] <- weighted.mean(toets[i,2:8],toets[i,9:15],na.rm=TRUE)
+}
+colnames(indices)[9] <- "Total"
+
+#-------------------------------------
+#ANDER OPSIES
+crops.alt <- crops
+for(j in 2:ncol(crops)) {   #maak eers die growth rates
+    crops.alt[1,j] <- 1
+    for(i in 2:299) {
+        crops.alt[i,j] <- crops[i,j]/crops[i-1,j]
+    }
+}
+crops.alt[,-1] <- na.approx(crops.alt[,-1], na.rm=FALSE)
+crops.alt[,-1] <- na.locf(crops.alt[,-1], na.rm=FALSE)
+
+toets <- cbind(crops.alt,gewig[,1:8])
+for(i in 1:299) {
+    crops.alt[i,10] <- weighted.mean(toets[i,2:9],toets[i,10:17],na.rm=TRUE)
+    
+}
+colnames(crops.alt)[10] <- "Crops"
+
+crops.alt[1,11] <- 100
+for(i in 2:299) {
+    crops.alt[i,11] <- crops.alt[i,10]*crops.alt[i-1,11]
+    
+}
+
+crops.alt[i]
 
 #colnames(livestock)[-1]
 #colnames(gewig)[20:25]
 #check <- priceIndex(colnames(livestock)[-1],colnames(gewig)[20:25],1,toets,na.rm=FALSE, weights = TRUE)
 
 
-##MOVE BUTTER TO PRODUCE OR PROVISIONS !!!!!
 toets <- produce
 for(j in 2:ncol(produce)) {   #maak eers die growth rates
     toets[1,j] <- 1
