@@ -1,0 +1,41 @@
+---
+output: 
+    pdf_document:
+        fig_caption: yes
+        number_sections: true
+fontsize: 12pt
+geometry: margin=1in
+csl: harvard.csl
+---
+
+\begin{table}[ht]
+\centering
+\caption{Unit root test statistics} 
+\begin{tabular}{rlll}
+  \hline
+ & Pre-War & Post-War & Full Period \\ 
+  \hline
+  Port Elizabeth & -1.68  & -2.17  & -2.57  \\ 
+  East London & -2.75  & -1.48  & -3.22*  \\ 
+  Kimberley & -3.22*  & -2.54  & -2.76  \\ 
+  Worcester+ & -3.16*  & -4.05**  & -3.79**  \\ 
+  Malmesbury+ & -2.45  & -3.37*  & -2.67  \\ 
+  Beaufort West & -1.99  & -2.45  & -2.96  \\ 
+  Mossel Bay+ & -2.22  & -3.30*  & -2.66  \\ 
+  Clanwilliam &  1.96  & -3.54**  & -2.22  \\ 
+  Graham's Town & -2.12  & -3.16*  & -3.85**  \\ 
+  Port Alfred+ & -0.80  & -3.27*  & -2.55  \\ 
+  Graaff-Reinet+ & -3.26*  & -2.66  & -4.42**  \\ 
+  Cradock+ & -1.45  & -2.12  & -2.82  \\ 
+  Colesberg+ & -2.67  & -2.31  & -2.92  \\ 
+  King William's Town & -2.29  & -3.96**  & -3.09  \\ 
+  Queen's Town & -0.07  & -2.43  & -1.95  \\ 
+  Burghersdorp & -3.32*  & -2.61  & -2.64  \\ 
+  Aliwal North & -3.28*  & -3.78**  & -4.17**  \\ 
+  Dordrecht+ & -2.50  & -2.12  & -3.11  \\ 
+  Tarkastad+ & -2.77  & -2.82  & -2.80  \\ 
+  \hline 
+ \multicolumn{4}{l}{\scriptsize{+ indicates restricted sample (Dec 1910)}} 
+  \end{tabular}
+\end{table}
+
