@@ -647,7 +647,6 @@ Figure 9 illustrates the commodity price indices for 4 selected individual commo
 ```{r makeindex, echo=FALSE, results='hide', message=FALSE, warning=FALSE, cache = TRUE}
 ##==================================
 #Do this for all the commodities
-
 makeindex <- function(produk) {
     rscomdata1 <- rscomdata[rscomdata$commodity==produk,]
     if(nrow(rscomdata1)>0) {
@@ -829,7 +828,6 @@ The indices for cattle and beef follow similar paths, which is reassuring for su
 The indices for the commodity groups are illustrated in Figures 10 and 11, together with the total wholesale price index. The overall trend in the total wholesale index is clear and accords quite well with the historical narrative on the economic history of the Cape Colony. 
 
 ```{r weight, echo=FALSE, results='hide', message=FALSE, warning=FALSE, cache = TRUE}
-#---------------------------------
 #Calculate commodity group indices
 gewig <- read.csv("Weights.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 
@@ -889,7 +887,6 @@ for(i in 1:299) {
 }
 colnames(o.provisions)[9] <- "O.Provisions"
 
-
 indices <- cbind(crops[,c("Date","Crops")],produce[,"Produce"],pastoral[,"Pastoral"],livestock[,"Livestock"],
                  p.provisions[,"P.Provisions"],a.provisions[,"A.Provisions"],o.provisions[,"O.Provisions"])
 colnames(indices) <- c("Date","Crops","Produce","Pastoral","Livestock","P.Provisions","A.Provisions","O.Provisions")
@@ -902,8 +899,6 @@ colnames(indices)[9] <- "Total"
 ```
 
 ```{r figure10, echo=FALSE, warning=FALSE, cache = TRUE, fig.height=4.5, fig.width=7.5, fig.cap="Commodity group indices (1)"}
-#-----------------------------------------------
-#Plot commodity Groups
 index_plot <- indices[,c(1,2)]
 g1 <- ggplot(index_plot, aes(x=Date,y=Crops,group=1))
 g1 <- g1 + geom_line(colour="#F8766D")
@@ -1671,8 +1666,8 @@ regions2 <- regions
 regions2[256:299,kort] <- NA 
 
 ts.all_indices <- as.ts(regions2[1:152,-1], start=c(1889,10),end=c(1902,5), frequency = 12) 
-source("corstars2.R")
-xt <- xtable(corstars2(ts.all_indices)[,1:4], caption="Pre-War correlations")
+source("corstarsl.R")
+xt <- xtable(corstarsl(ts.all_indices)[,1:4], caption="Pre-War correlations")
 print(xt, "latex",comment=FALSE, caption.placement = getOption("xtable.caption.placement", "top"),
       scalebox = 0.8,sanitize.text.function = function(x) x)
 ```
@@ -1684,11 +1679,11 @@ for(i in 1:20) {
         colnames(ts.all_indices)[i] <- paste(colnames(ts.all_indices)[i], "+", sep="")
     } 
 }
-source("corstars2.R")
+source("corstarsl.R")
 note <- paste0("\\hline \n \\multicolumn{4}{l}",
                "{\\scriptsize{Notes: + indicates restricted sample (Dec 1910)}} \n")
 
-xt <- xtable(corstars2(ts.all_indices)[,1:4], caption="Post-War correlations")
+xt <- xtable(corstarsl(ts.all_indices)[,1:4], caption="Post-War correlations")
 print(xt, "latex",comment=FALSE, caption.placement = getOption("xtable.caption.placement", "top"),
       scalebox = 0.8,sanitize.text.function = function(x) x, 
              hline.after=c(-1, 0),add.to.row = list(pos = list(20),command = note))
@@ -1705,7 +1700,6 @@ Unit root tests of the price ratios can be used to investigate longer term relat
 The price ratio between the two towns is defined as $r_{ij,t} = \frac{p_{i,t}}{p_{j,t}}$, where $p_{i,t}$ and $p_{j,t}$ are the commodity prices in towns $i$ and $j$ in month $t  (t=1,.,T)$. If the two towns share the same market, one may require absolute convergence of prices, i.e. $r_{ij,t} = 1$ However, much of the literature focuses on the looser concept of relative convergence, where prices in two towns sharing the same market may diverge while still "constraining" each other. 
 
 This constraint is measured by the presence of a stochastic trend in the data. If $r_{ij,t}$ contains a unit root, the conclusion is that the towns are not integrated, as commodity prices in two towns sharing a market will not move arbitrarily far away from each another. Thus, if the tests indicate non-stationarity, the conclusion is in favour of separate markets. If the price ratio $r_{ij,t}$ is stationary, it can be interpreted as an indication of a single market.[^24] Thus, towns in the same market will share a common trend in their prices so that the price ratio will be stationary. 
-
 [^24]: While non-stationarity implies seperate markets, stationarity could in principle be observed even if markets are distinct, for instance, when prices themselves are stationary (Forni 2002). In our case, almost all of the crop indices are non-stationary. 
 
 Table 6 reports the test statistics for the ADF unit root tests of the log price ratios of each town's Crop price index relative to the Cape Town Crop price index as the benchmark series. The results indicate that the null hypothesis of stationarity could be rejected in a number of cases, implying that the crops in the different towns formed part of the same market. In most cases, the integration improved in the post-War period. The long-run relationship between crop prices improved and was stationary during the post-War period in Worcester, Malmesbury, Mossel Bay, Clanwilliam, Graham's Town, Port Alfred, King William's Town and Aliwal North. The lack of significant relationship between prices in Cape Town and the other major towns of Port Elizabeth, East London and Kimberley in the post-War period is somewhat surprising. If the tests are conducted relative to East London crop prices, there are also a number of significant long run relationships, including notably Kimberley and Colesberg in the interior, and Graham's Town, Port Alfred, Graaff-Reinet, Cradock, Aliwal North and Tarkastad in the Eastern Cape.

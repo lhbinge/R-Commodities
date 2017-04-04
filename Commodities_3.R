@@ -39,10 +39,10 @@ recessions.df = read.table(textConnection(
     1877-01-01, 1879-01-01
     1881-01-01, 1886-01-01
     1893-01-01, 1896-01-01
-    1869-01-01, 1870-01-01
     1899-01-01, 1902-01-01
     1905-01-01, 1909-01-01"), sep=',',
     colClasses=c('Date','Date'), header=TRUE)
+
 
 indicator_plot <- GDP[,c("Date","lnRGDP")]
 g <- ggplot(indicator_plot) 
@@ -57,26 +57,55 @@ g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g <- g + theme(legend.position="none")
 g
 
+#Alternative
+alt_recessions.df = read.table(textConnection(
+    "Peak, Trough
+    1881-12-31, 1885-12-31
+    1889-12-31, 1894-12-31
+    1899-12-31, 1900-12-31
+    1906-12-31, 1909-12-31"), sep=',',
+    colClasses=c('Date','Date'), header=TRUE)
 
+indicator_plot <- GDP[-1:-25,c("Date","lnRGDP")]
+g <- ggplot(indicator_plot) 
+#g <- g + theme_bw()
+g <- g + labs(color="Legend text")
+g <- g + geom_line(aes(x=Date, y=lnRGDP, colour="lnRGDP"), size = 1)
+g <- g + geom_rect(data=alt_recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
+g <- g + ylab("log Real GDP") + xlab("")
+g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g <- g + theme(legend.position="none")
+g
+
+
+#---------------------------------------------------
 trade <- read.csv("Trade.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 trade$Date <- as.Date(trade$Date)
 
 ##For Grpahing Business cycles
-recessions.df = read.table(textConnection(
+#recessions.df = read.table(textConnection(
+#    "Peak, Trough
+#    1893-01-01, 1896-01-01
+#    1899-01-01, 1902-01-01
+#    1905-01-01, 1909-01-01"), sep=',',
+#    colClasses=c('Date','Date'), header=TRUE)
+
+alt_recessions.df = read.table(textConnection(
     "Peak, Trough
-    1893-01-01, 1896-01-01
-    1899-01-01, 1902-01-01
-    1905-01-01, 1909-01-01"), sep=',',
+    1889-12-31, 1894-12-31
+    1899-12-31, 1900-12-31
+    1906-12-31, 1909-12-31"), sep=',',
     colClasses=c('Date','Date'), header=TRUE)
 
 indicator_plot <- trade[,c("Date","Imports","Exports","Trade_Balance")]
 g <- ggplot(indicator_plot) 
-g <- g + theme_bw()
+#g <- g + theme_bw()
 g <- g + labs(color="Legend text")
 g <- g + geom_line(aes(x=Date, y=Imports, colour="Imports"), size = 1)
 g <- g + geom_line(aes(x=Date, y=Exports, colour="Exports"), size = 1)
 #g <- g + geom_bar(aes(x=Date, y=Trade_Balance, fill="Trade_Balance"),size = 0.5,stat="identity")
-g <- g + geom_rect(data=recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
+g <- g + geom_rect(data=alt_recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
 g <- g + xlab("")
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
@@ -737,18 +766,31 @@ g4 <- g4 + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 grid.arrange(g1, g2, g3, g4, ncol=2, nrow =2)
 
 
+#---------------------------------------------
+##For Grpahing Business cycles
+alt_recessions.df = read.table(textConnection(
+    "Peak, Trough
+    1889-12-31, 1894-12-31
+    1899-12-31, 1900-12-31
+    1906-12-31, 1909-12-31"), sep=',',
+    colClasses=c('Date','Date'), header=TRUE)
+
+#png(file = "Commodity_plot.png", width=720,height=480)
 indicator_plot <- indices[,c("Date","Total")]
 g <- ggplot(indicator_plot) 
-g <- g + theme_bw()
 g <- g + labs(color="Legend text")
 g <- g + geom_line(aes(x=Date, y=Total, colour="Total"), size = 1)
-g <- g + geom_rect(data=recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
-g <- g + ylab("log Real GDP")
-g <- g + xlab("")
+g <- g + geom_rect(data=alt_recessions.df, aes(xmin=Peak, xmax=Trough, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
+g <- g + ylab("Index") + xlab("")
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+#g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"),expand=c(0,0),
+#                      limits = as.Date(c("1888-12-31", NA)))
 g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
 g <- g + theme(legend.position="none")
 g
+#dev.off()
+
+
 
 #--------------------------------
 #Calculate annual average
@@ -1468,6 +1510,9 @@ note <- paste0("\\hline \n \\multicolumn{4}{l}",
 xt <- xtable(Rnew, caption="Unit root test statistics")
 print.xtable(xt,"latex",comment=FALSE, caption.placement = getOption("xtable.caption.placement", "top"),
              hline.after=c(-1, 0),add.to.row = list(pos = list(19),command = note))
+
+
+
 
 
 
