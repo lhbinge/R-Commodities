@@ -8,34 +8,37 @@ geometry: margin=1in
 csl: harvard.csl
 ---
 
-\begin{table}[ht]
+\begin{table}[]
 \centering
-\caption{Unit root test statistics} 
-\begin{tabular}{rlll}
-  \hline
- & Pre-War & Post-War & Full Period \\ 
-  \hline
-  Port Elizabeth & -1.68  & -2.17  & -2.57  \\ 
-  East London & -2.75  & -1.48  & -3.22*  \\ 
-  Kimberley & -3.22*  & -2.54  & -2.76  \\ 
-  Worcester+ & -3.16*  & -4.05**  & -3.79**  \\ 
-  Malmesbury+ & -2.45  & -3.37*  & -2.67  \\ 
-  Beaufort West & -1.99  & -2.45  & -2.96  \\ 
-  Mossel Bay+ & -2.22  & -3.30*  & -2.66  \\ 
-  Clanwilliam &  1.96  & -3.54**  & -2.22  \\ 
-  Graham's Town & -2.12  & -3.16*  & -3.85**  \\ 
-  Port Alfred+ & -0.80  & -3.27*  & -2.55  \\ 
-  Graaff-Reinet+ & -3.26*  & -2.66  & -4.42**  \\ 
-  Cradock+ & -1.45  & -2.12  & -2.82  \\ 
-  Colesberg+ & -2.67  & -2.31  & -2.92  \\ 
-  King William's Town & -2.29  & -3.96**  & -3.09  \\ 
-  Queen's Town & -0.07  & -2.43  & -1.95  \\ 
-  Burghersdorp & -3.32*  & -2.61  & -2.64  \\ 
-  Aliwal North & -3.28*  & -3.78**  & -4.17**  \\ 
-  Dordrecht+ & -2.50  & -2.12  & -3.11  \\ 
-  Tarkastad+ & -2.77  & -2.82  & -2.80  \\ 
-  \hline 
- \multicolumn{4}{l}{\scriptsize{+ indicates restricted sample (Dec 1910)}} 
-  \end{tabular}
+\caption{Census production in the Cape Colony}
+\label{my-label}
+\begin{tabular}{rrrrrrr}
+\textbf{Year} & \textbf{Wheat (200lbs)} & \textbf{Maize (200lbs)} & \textbf{Cattle} & \textbf{Woolled Sheep} & \textbf{Horses} \\
+1891                 & 909,000                 & 965,000                 & 2,211,000       & 13,631,000             & 444,000         \\
+1904                 & 567,000                 & 1,131,000               & 1,954,000       & 8,465,000              & 255,000         \\
+1911                 & 1,305,000               & 1,728,000               & 2,715,000       & 13,239,000             & 334,000         \\
+\multicolumn{2}{l}{\textit{Source: De Kock (1924)}}     &                         &                 &                        &                
+\end{tabular}
 \end{table}
+
+
+
+
+
+\begin{table}[]
+\centering
+\caption{Banking statistics in South Africa (in £'000s)}
+\label{my-label}
+\begin{tabular}{rrrrrrr}
+\multicolumn{1}{l}{\textbf{Year}} & \multicolumn{1}{l}{\textbf{Reserves}} & \multicolumn{1}{l}{\textbf{Currency}} & \multicolumn{1}{l}{\textbf{Deposits}} & \multicolumn{1}{l}{\textbf{Loans}} & \multicolumn{1}{l}{\textbf{Dep/Res}} & \multicolumn{1}{l}{\textbf{Dep/Cur}} \\
+1891                              & 3,414                                 & 4,473                                        & 12,295                                & 9,820                              & 3.60                                      & 2.75                                      \\
+1899                              & 7,545                                 & 8,077                                        & 25,153                                & 19,684                             & 3.33                                      & 3.11                                      \\
+1902                              & 14,895                                & 11,472                                       & 47,222                                & 34,985                             & 3.17                                      & 4.12                                      \\
+1905                              & 9,019                                 & 8,907                                        & 44,039                                & 37,020                             & 4.88                                      & 4.94                                      \\
+1907                              & 8,740                                 & 7,968                                        & 37,791                                & 30,801                             & 4.32                                      & 4.74                                      \\
+1910                              & 7,735                                 & 7,766                                        & 42,474                                & 37,133                             & 5.49                                      & 5.47                                      \\
+\multicolumn{4}{l}{\textit{Sources: De Kock (1924); Schumann (1938)}}                                                                                                        & \multicolumn{1}{l}{}               & \multicolumn{1}{l}{}                      & \multicolumn{1}{l}{}                     
+\end{tabular}
+\end{table}
+
 

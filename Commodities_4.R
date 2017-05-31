@@ -49,7 +49,7 @@ tp$Troughs <- as.character(tp$Troughs)
 tp$Troughs <- as.Date(as.yearqtr(tp$Troughs, format = "%YQ%q"), frac = 1)
 tp$Troughs[nrow(tp)] <- "1909-12-31"
 
-indicator_plot <- cbind(datums$Date,as.data.frame(ts.GDP.m))
+indicator_plot <- cbind(datums$Date,as.data.frame(ts.GDP.q))
 colnames(indicator_plot) <- c("Date","lnRGDP")
 indicator_plot$lnRGDP <- as.numeric(indicator_plot$lnRGDP)
 g <- ggplot(indicator_plot[-1:-100,]) 
@@ -58,10 +58,10 @@ g <- g + geom_line(aes(x=Date, y=lnRGDP, colour="lnRGDP"), size = 1)
 g <- g + geom_rect(data=tp[-1:-6,], aes(xmin=Peaks, xmax=Troughs, ymin=-Inf, ymax=+Inf), fill='grey', alpha=0.5)
 g <- g + ylab("log Real GDP") + xlab("")
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
-#g <- g + scale_x_date(limits = c(as.Date("1879-12-31"), as.Date("1910-12-31")), 
-#                      breaks = seq(as.Date("1879-12-31"), as.Date("1910-12-31"), "year") - c(0,1,1,0),
-#                      date_labels = "%Y", expand=c(0,30))
+#g <- g + scale_x_date(labels = date_format("%Y"),breaks = date_breaks("year"))
+g <- g + scale_x_date(limits = c(as.Date("1879-12-31"), as.Date("1910-12-31")), 
+                      breaks = seq(as.Date("1879-12-31"), as.Date("1910-12-31"), "year") - c(0,1,1,0),
+                      date_labels = "%Y", expand=c(0,30))
 g <- g + theme(legend.position="none")
 g
 
@@ -219,8 +219,7 @@ rscomdata1 <- rscomdata[rscomdata$commodity=="wheat",]
 g <- ggplot(data=rscomdata1,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 0.5) 
 g <- g + geom_line()
-g <- g + ylab("Wheat prices")
-g <- g + xlab("")
+g <- g + ylab("Wheat prices") + xlab("")
 g <- g + theme(legend.key.size = unit(0.5,"cm"))
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + theme(legend.title=element_blank())
@@ -251,8 +250,7 @@ rsblue1 <- rsblue[rsblue$commodity=="wheat",]
 g <- ggplot(data=rsblue1,aes(x=date, y=price, colour=town)) 
 g <- g + geom_point(size = 1) 
 g <- g + geom_line()
-g <- g + ylab("Wheat prices")
-g <- g + xlab("")
+g <- g + ylab("Wheat prices") + xlab("")
 g <- g + theme(legend.key.size = unit(0.3,"cm"))
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + theme(legend.title=element_blank()) 
@@ -266,13 +264,13 @@ rsblue1$date <- as.Date(rsblue1$date)
 
 wheat <- merge(rscomdata1[,c(2,4)],rsblue1[,c(1,3)],by.x="date",by.y="date",all.x=TRUE)
 wheat <- wheat[1:325,]
-#wheat$price.y <- wheat$price.y*1.5
+#wheat$price.y <- wheat$price.y*0.5
 colnames(wheat) <- c("date","Wheat per 100lbs (Agri Journals)","Wheat per bushel (Blue Books)")
 
 complot <- melt(wheat, id="date") 
 g <- ggplot(data=complot,aes(x=date, y=value, colour=variable)) 
 g <- g + geom_line()
-g <- g + geom_point(size = 2) 
+g <- g + geom_point(aes(size = variable)) 
 g <- g + ylab("Wheat prices")+ xlab("")
 g <- g + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 g <- g + theme(legend.title=element_blank()) + theme(legend.position="bottom")
@@ -280,20 +278,44 @@ g
 
 
 ##==================================
-toy.df = read.table(textConnection(
-    "Date,Period,Beaufort West,Cape Town,Worcester,Index
-    Jun 1891,1,150,NA,210,100.00
-    Jul 1891,2,135,138,NA,88.83
-    Aug 1891,3,135,150,NA,92.01
-    Sep 1891,4,NA,NA,288,138.94
-    Oct 1891,5,NA,144,NA,86.37
-    Nov 1891,6,NA,144,NA,84.45
-    Dec 1891,7,120,144,NA,82.57
-    Jan 1892,8,NA,NA,144,70.38
-    Feb 1892,9,NA,126,144,71.31
-    Mar 1892,10,NA,126,NA,71.31"), sep=',', header=TRUE)
+#Toy Example
+toy <- dcast(comdata, time_id + datum ~ town, mean, value.var="wheat")
+toy <- toy[21:30,c("time_id","datum","Beaufort West","Cape Town","Worcester")]
+toy$t <- 1:nrow(toy)
+#toy1$lnvalue <- log(toy1$value) 
 
-xt <- xtable(toy.df, caption="Repeat sales example with wheat prices")
+maak <- function(naam) {
+    toy2 <- toy
+    toy2 <- toy2[!is.na(toy[,naam]),c(naam,"t")]
+    for(i in 1:(nrow(toy2)-1)) {
+        toy2$P[1] <- 0
+        toy2$P[i+1] <- log(toy2[i+1,naam]/toy2[i,naam])
+    }
+    xmat <- array(0, dim = c(nrow(toy2)-1, nrow(toy))) 
+    for(i in 1:(nrow(toy2)-1)) {
+        xmat[i,toy2$t[i]] <- -1
+        xmat[i,toy2$t[i+1]] <- 1
+    }
+    einde <- cbind(toy2$P[-1],xmat)  
+    return(einde)
+}
+
+einde <- as.data.frame(rbind(maak("Beaufort West"),maak("Cape Town"),maak("Worcester")))
+dy <- einde$V1
+xmat <- as.matrix(einde[,2:ncol(einde)])
+
+rsales <- lm(dy ~ xmat + 0)
+rs_index <- as.data.frame(exp(rsales$coefficients))
+n <- rs_index[1,1]
+rs_index <- rs_index/n*100
+rs_index <- na.locf(rs_index)
+#rs_index2 <- exp(as.data.frame(ps.RS$coefficients))*100
+
+toy <- cbind(toy,rs_index)
+toy <- toy[,c(2,3,4,5,7)]
+colnames(toy)[c(1,5)] <- c("Date","Index")
+
+xt <- xtable(toy, caption="Repeat sales example with wheat prices")
 print(xt, "latex", include.rownames=FALSE,comment=FALSE, 
       caption.placement = getOption("xtable.caption.placement", "top"), scalebox = 0.9)
 
@@ -316,6 +338,11 @@ align(xt) <- rep("r", 7)
 print(xt, "latex", include.rownames=FALSE,comment=FALSE, 
       caption.placement = getOption("xtable.caption.placement", "top"), scalebox = 0.9)
 
+
+colnames(einde) <- c("ln(Pt/Ps)","D1","D2","D3","D4","D5","D6","D7","D8","D9","D10")
+xt <- xtable(toy.df, caption="Rgression input of repeat sales example with wheat prices",digits=c(3,3,0,0,0,0,0,0,0,0,0,0))
+print(xt, "latex", include.rownames=FALSE,comment=FALSE, 
+      caption.placement = getOption("xtable.caption.placement", "top"), scalebox = 0.9)
 
 #--------------------------
 #Wheat example
@@ -1098,7 +1125,7 @@ print(xt, "latex",comment=FALSE, caption.placement = getOption("xtable.caption.p
 UK <- read.csv("UK.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 UK$Date <- indices$Date
 UK <- cbind(UK,Cape.WPI=indices$Total,
-            Cape.Wheat=na.approx(crops$wheat.Total_Index,na.rm=FALSE))
+            Cape.Wheat=na.approx(crops$wheat.Index,na.rm=FALSE))
 UK <- UK[-1:-3,c(1,2,7,3:6)]
 UK <- maak_indeks(UK)
 
