@@ -1158,6 +1158,9 @@ print(xt, "latex",comment=FALSE, caption.placement = getOption("xtable.caption.p
 #========================
 #---DECOMPOSITION--------
 #========================
+#========================
+#---DECOMPOSITION--------
+#========================
 gewig2 <- read.csv("Weights2.csv", header=TRUE, sep=",",na.strings = "", skipNul = TRUE)
 
 #Do this on Journal data
@@ -1170,12 +1173,40 @@ dp <- data.frame()
 for(i in unique(comdata1$town)) {
     temp <- comdata1[comdata1$town==i,]
     for(j in 6:ncol(temp)) {
-        temp[-1,j] <- diff(log(temp[,j]), lag =1)*100
+        temp[-1,j] <- diff(log(temp[,j]), lag =1)
     }
     dp <- rbind(dp,temp[-1,])
 }
 
 adp <- aggregate(dp[,6:ncol(dp)], by=list(dp$date), FUN = function(x) mean(x, na.rm=TRUE))
+#for(i in 1:24) {    if(sum(z[,i]>5,na.rm=TRUE)>0) {x<-i}}
+
+#z <- melt(adp[,-1],by=colnames(adp[,-1]))
+#qplot(z[,2], geom="histogram", 
+#      xlab = "Distribution of price changes",binwidth = 0.025)
+
+z <- melt(adp[,-1],by=colnames(adp[,-1]))
+g1 <- ggplot(z) 
+g1 <- g1 + geom_histogram(aes(x=value),binwidth=0.05) 
+g1 <- g1 + xlab("Distribution of price changes")
+g1 <- g1 + scale_x_continuous(limits=c(-0.5, 0.6))
+
+
+#histogram(z[,3])
+#z <- scale(adp[,-1]) 
+#qplot(melt(z,by=colnames(z))[,3], geom="histogram", 
+#      xlab = "Distribution of normalised price changes",binwidth = 0.5,
+#      scale_x_continuous(breaks = seq(-5, 6, 1),limits=c(-5, 6)))
+
+z <- scale(adp[,-1]) 
+z <- melt(z,by=colnames(z))[,-1]
+g2 <- ggplot(z) 
+g2 <- g2 + geom_histogram(aes(x=value,y=..density..),binwidth=0.5) 
+g2 <- g2 + xlab("Distribution of normalised price changes")
+g2 <- g2 + scale_x_continuous(breaks = seq(-5, 6, 1),limits=c(-5, 6))
+
+grid.arrange(g1, g2, ncol=2, nrow =1)
+
 
 for(i in 1:275) {
     adp$Pi[i] <- weighted.mean(adp[i,2:25], gewig2, na.rm=TRUE)
